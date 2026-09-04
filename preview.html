@@ -76,6 +76,23 @@
   .spark{width:100%; height:34px; margin-top:10px}
   .compass-read{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none}
   .compass-read .card{font-family:"Rajdhani"; font-weight:700; font-size:20px; color:var(--amber-soft); letter-spacing:.1em}
+  .trip{display:flex; align-items:center; gap:22px; flex-wrap:wrap; padding:14px 18px;
+    border-top:1px solid var(--edge); background:linear-gradient(180deg,rgba(255,138,61,.05),transparent)}
+  .trip .lead{display:flex; flex-direction:column; gap:3px; min-width:200px}
+  .trip .eyebrow{font-family:"Rajdhani"; font-weight:700; letter-spacing:.18em; font-size:13px;
+    text-transform:uppercase; color:var(--amber-soft)}
+  .trip .dist{font-family:"Rajdhani"; font-weight:700; font-size:42px; line-height:1; color:var(--ink);
+    font-variant-numeric:tabular-nums}
+  .trip .dist small{font-size:18px; color:var(--dim); font-weight:600}
+  .trip .tstats{display:flex; gap:24px}
+  .trip .tstat .k{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint)}
+  .trip .tstat .v{font-family:"Rajdhani"; font-weight:600; font-size:20px; color:var(--ink); font-variant-numeric:tabular-nums}
+  .trip .ctrl{margin-left:auto; display:flex; gap:10px}
+  .trip .ctrl button{font-family:"Rajdhani"; font-weight:700; letter-spacing:.06em; font-size:15px;
+    border-radius:10px; padding:11px 20px; cursor:pointer; border:1px solid var(--edge)}
+  .btn-go{background:var(--amber); color:#1a1206; border-color:var(--amber)}
+  .btn-go.on{background:transparent; color:var(--amber-soft)}
+  .btn-rst{background:var(--panel2); color:var(--dim)}
   .foot{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 18px;
     border-top:1px solid var(--edge); color:var(--dim); font-size:12.5px; letter-spacing:.05em; flex-wrap:wrap}
   .foot .coord{font-family:"Rajdhani"; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:.03em}
@@ -120,6 +137,12 @@
             <g id="rollTicks" stroke="#3a4a58" stroke-width="2"></g>
             <line x1="18" y1="105" x2="58" y2="105" stroke="#3a4a58" stroke-width="2"/>
             <line x1="152" y1="105" x2="192" y2="105" stroke="#3a4a58" stroke-width="2"/>
+            <!-- stylized mountain backdrop -->
+            <g id="mount">
+              <path d="M28 136 L70 86 L96 106 L118 58 L150 98 L182 136 Z" fill="#14232b" stroke="#2f6470" stroke-width="1.5" opacity=".6"/>
+              <path d="M110 66 L118 58 L126 66 L120 70 L114 70 Z" fill="#9fc3cf" opacity=".7"/>
+              <path d="M62 94 L70 86 L78 94 L73 97 L66 97 Z" fill="#9fc3cf" opacity=".55"/>
+            </g>
             <!-- horizon tilts with pitch -->
             <g id="horizon"><line x1="40" y1="105" x2="170" y2="105" stroke="#2b3a47" stroke-width="2" stroke-dasharray="4 6"/></g>
             <!-- Pajero Full front, rolls with roll -->
@@ -206,6 +229,22 @@
       </div>
     </div>
 
+    <div class="trip">
+      <div class="lead">
+        <span class="eyebrow">Tamanho da aventura</span>
+        <span class="dist"><span id="tDist">0,0</span> <small>km</small></span>
+      </div>
+      <div class="tstats">
+        <div class="tstat"><div class="k">Tempo</div><div class="v" id="tTime">00:00</div></div>
+        <div class="tstat"><div class="k">Vel. m&eacute;d.</div><div class="v"><span id="tAvg">0</span> km/h</div></div>
+        <div class="tstat"><div class="k">Subida</div><div class="v"><span id="tClimb">0</span> m</div></div>
+      </div>
+      <div class="ctrl">
+        <button class="btn-go" id="btnGo">&#9654; Ligar</button>
+        <button class="btn-rst" id="btnRst">&#8635; Zerar</button>
+      </div>
+    </div>
+
     <div class="foot">
       <span>Serra da Mantiqueira &middot; trilha</span>
       <span class="coord">22&deg;25&#39;07&quot;S &nbsp; 44&deg;36&#39;13&quot;O</span>
@@ -287,6 +326,31 @@
     particles.length=0;
   }
   $('#wxseg').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) setWx(b.dataset.w);});
+
+  // ---------- trip odometer ("Tamanho da aventura") ----------
+  const trip={on:false,dist:0,move:0,climb:0,lastAlt:null};
+  const btnGo=$('#btnGo'),btnRst=$('#btnRst');
+  btnGo.addEventListener('click',()=>{ trip.on=!trip.on; if(trip.on) trip.lastAlt=null;
+    btnGo.classList.toggle('on',trip.on);
+    btnGo.innerHTML=trip.on?'&#10073;&#10073; Pausar':'&#9654; Ligar'; });
+  btnRst.addEventListener('click',()=>{ trip.dist=0;trip.move=0;trip.climb=0;trip.lastAlt=null; renderTrip(); });
+  function fmtTime(s){ s=Math.floor(s); const m=Math.floor(s/60),ss=s%60;
+    return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0'); }
+  function renderTrip(){
+    $('#tDist').textContent=trip.dist.toFixed(1).replace('.',',');
+    $('#tTime').textContent=fmtTime(trip.move);
+    $('#tAvg').textContent=(trip.move>2?trip.dist/(trip.move/3600):0).toFixed(0);
+    $('#tClimb').textContent=trip.climb.toFixed(0);
+  }
+  const TRIP_FACTOR=40; // acelera a contagem na demo p/ o número se mexer na tela
+  function updateTrip(speed,alt){
+    if(trip.on){ const dt=(1/60)*TRIP_FACTOR;
+      trip.dist+=speed/3600*dt; trip.move+=dt;
+      if(trip.lastAlt!=null && alt>trip.lastAlt) trip.climb+=(alt-trip.lastAlt);
+      trip.lastAlt=alt;
+    }
+    renderTrip();
+  }
 
   // ---------- ambient canvas (snow / embers) ----------
   const cv=$('#ambient'), ctx=cv.getContext('2d'); let W=0,H=0;
@@ -383,6 +447,10 @@
 
     $('#rose').setAttribute('transform',`translate(105,105) rotate(${(-hdg).toFixed(1)})`);
     $('#hdgBig').textContent=hdg.toFixed(0); $('#hdgCard').textContent=cardName(hdg);
+
+    const speed=26+Math.sin(t/40)*12;
+    $('#spd').textContent=speed.toFixed(0);
+    updateTrip(speed, alt);
 
     spawn(); drawAmbient();
     if(!reduce) requestAnimationFrame(frame);

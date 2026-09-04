@@ -24,3 +24,6 @@ _(ainda não definida — GitHub Pages em repo próprio `drptze-teste/offroad-ap
 ```bash
 npx --yes serve -l 5173 .
 ```
+
+## Prévia do design
+- `preview.html` — maquete animada dos três relógios (dados simulados). Ver em https://drptze-teste.github.io/offroad-app/preview.html

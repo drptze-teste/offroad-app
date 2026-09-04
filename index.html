@@ -25,6 +25,9 @@
   .big{font-size:26px;font-weight:700}
   #summary{padding:12px 18px;background:#0f1620;border-bottom:1px solid var(--line);font-size:15px}
   #summary span{display:inline-block;margin:4px 12px 4px 0;padding:6px 12px;border-radius:8px;background:#1b2430}
+  #banner{display:none;padding:14px 18px;background:#3a0d0d;border-bottom:2px solid var(--bad);color:#ffd9d4;font-size:15px;line-height:1.5}
+  #banner b{color:#fff}
+  #banner code{background:#00000055;padding:2px 6px;border-radius:6px;word-break:break-all}
   footer{padding:10px 18px;color:var(--dim);font-size:12px;word-break:break-all}
 </style>
 </head>
@@ -35,6 +38,7 @@
   <button id="btnFull" class="sec">Tela cheia</button>
 </header>
 
+<div id="banner"></div>
 <div id="summary">Toque em <b>Iniciar teste</b>. Depois de ~20 segundos, fotografe esta tela e me envie.</div>
 
 <main>
@@ -81,6 +85,7 @@
     <h2>Ambiente <span class="badge ok" id="bEnv">ok</span></h2>
     <div class="row"><b>Tela (px)</b><span id="envScr">—</span></div>
     <div class="row"><b>HTTPS</b><span id="envHttps">—</span></div>
+    <div class="row"><b>Contexto seguro (sensores/GPS)</b><span id="envSecure">—</span></div>
     <div class="row"><b>Instalado como app</b><span id="envStand">—</span></div>
     <div class="row"><b>Manter tela ligada (Wake Lock)</b><span id="envWake">—</span></div>
     <div class="row"><b>Tela cheia</b><span id="envFull">—</span></div>
@@ -106,8 +111,18 @@ function summary(){
 }
 
 // ---------- Ambiente ----------
+const SECURE = window.isSecureContext === true;
 $('envScr').textContent = `${screen.width}×${screen.height} (janela ${innerWidth}×${innerHeight}, dpr ${devicePixelRatio})`;
 $('envHttps').textContent = location.protocol === 'https:' ? 'sim' : (location.hostname==='localhost' ? 'localhost (ok)' : 'NÃO — sensores/GPS podem ser bloqueados');
+$('envSecure').textContent = SECURE ? 'sim' : 'NÃO — esta é a causa mais provável de tudo vir vazio';
+if (!SECURE) {
+  $('banner').style.display = 'block';
+  $('banner').innerHTML =
+    '<b>⚠️ Página aberta em contexto NÃO-seguro.</b> O Chrome bloqueia inclinômetro, acelerômetro, bússola e GPS fora de HTTPS — ' +
+    'por isso todos os cards ficam vermelhos. Endereço atual: <code>' + location.origin + '</code>.<br>' +
+    'Abra a versão publicada por HTTPS: <code>https://drptze-teste.github.io/offroad-app/index.html</code> ' +
+    '(ou sirva por <code>https://</code> / <code>localhost</code>).';
+}
 $('envStand').textContent = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches ? 'sim' : 'não (aberto no navegador)';
 $('envWake').textContent = 'wakeLock' in navigator ? 'suportado' : 'não suportado';
 $('envFull').textContent = document.fullscreenEnabled ? 'suportado' : 'não suportado';
@@ -130,9 +145,10 @@ $('btnStart').onclick = async () => {
   startGeneric();
   startWakeLock();
   // Veredito após 8 s sem dados
+  const semDados = SECURE ? 'sem dados (hardware?)' : 'bloqueado (HTTP)';
   setTimeout(() => {
-    if (oriN === 0) { badge('bOri','bad','sem dados'); S.ori='no'; }
-    if (motN === 0) { badge('bMot','bad','sem dados'); S.mot='no'; }
+    if (oriN === 0) { badge('bOri','bad',semDados); S.ori='no'; }
+    if (motN === 0) { badge('bMot','bad',semDados); S.mot='no'; }
     if (S.mag === 'wait') { S.mag = 'no'; }
     summary();
   }, 8000);
@@ -207,6 +223,10 @@ function startGps(){
 // ---------- Generic Sensor API ----------
 function startGeneric(){
   const probes = [['Accelerometer','gAcc'],['Gyroscope','gGyr'],['Magnetometer','gMag'],['AbsoluteOrientationSensor','gAbs'],['RelativeOrientationSensor','gRel']];
+  const why = n => n === 'SecurityError' ? 'SecurityError (bloqueado por HTTP/política)'
+    : n === 'NotAllowedError' ? 'NotAllowedError (permissão negada)'
+    : n === 'NotReadableError' ? 'NotReadableError (sem hardware)'
+    : n || '?';
   let any = false;
   for (const [name, id] of probes) {
     if (!(name in window)) { $(id).textContent = 'API ausente'; continue; }
@@ -218,10 +238,10 @@ function startGeneric(){
         if (name === 'Magnetometer' && S.mag !== 'ok') { S.mag='ok'; summary(); }
         if (!any) { any = true; badge('bGen','ok','funciona'); }
       });
-      s.addEventListener('error', e => { $(id).textContent = 'erro: ' + (e.error?.name || e.error?.message || '?'); });
+      s.addEventListener('error', e => { $(id).textContent = 'erro: ' + why(e.error?.name || e.error?.message); });
       s.start();
       $(id).textContent = 'iniciado…';
-    } catch(e) { $(id).textContent = 'erro: ' + e.name; }
+    } catch(e) { $(id).textContent = 'erro: ' + why(e.name); }
   }
   setTimeout(() => { if (!any) badge('bGen','warn','nenhum respondeu'); }, 8000);
 }

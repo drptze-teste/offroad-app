@@ -109,6 +109,23 @@
     color:var(--dim); font-size:12.5px; letter-spacing:.05em; flex-wrap:wrap}
   .foot b{color:var(--ink); font-family:"Rajdhani"; font-weight:600}
   .legend{text-align:center; color:var(--faint); font-size:12px; margin-top:14px; letter-spacing:.04em}
+  .sosback{position:fixed; inset:0; background:rgba(4,7,11,.72); display:none; align-items:center; justify-content:center; z-index:8; padding:18px}
+  .sosback.show{display:flex}
+  .soscard{background:var(--panel); border:1px solid var(--edge); border-radius:16px; width:100%; max-width:460px; max-height:82vh; overflow:auto; box-shadow:0 24px 60px rgba(0,0,0,.6)}
+  .soshead{display:flex; align-items:center; gap:10px; padding:14px 18px; border-bottom:1px solid var(--edge); position:sticky; top:0; background:var(--panel)}
+  .soshead h3{margin:0; font-family:"Rajdhani"; font-weight:700; letter-spacing:.06em; font-size:18px; flex:1}
+  .soshead button{background:var(--panel2); border:1px solid var(--edge); color:var(--dim); border-radius:8px; width:34px; height:34px; cursor:pointer; font-size:15px}
+  .sositem{display:flex; align-items:center; gap:12px; padding:13px 18px; border-bottom:1px solid var(--edge)}
+  .sositem:last-child{border-bottom:0}
+  .sositem .info{flex:1; min-width:0}
+  .sositem .nm{font-family:"Rajdhani"; font-weight:600; font-size:16px}
+  .sositem .mt{font-size:12.5px; color:var(--dim); margin-top:2px}
+  .sositem .mt .op{color:var(--level)} .sositem .mt .cl{color:var(--danger)}
+  .sositem .ph{font-family:"Rajdhani"; font-weight:600; color:var(--amber-soft); font-variant-numeric:tabular-nums}
+  .sositem .acts{display:flex; gap:7px; flex-shrink:0}
+  .callbtn{background:var(--level); color:#03210f; border:0; border-radius:9px; padding:9px 15px; font-family:"Rajdhani"; font-weight:700; font-size:14px; text-decoration:none; display:inline-block}
+  .routebtn{background:var(--panel2); color:var(--ink); border:1px solid var(--edge); border-radius:9px; padding:9px 12px; font-size:13px; text-decoration:none; display:inline-block}
+  .sosfoot{padding:11px 18px; color:var(--faint); font-size:12px; text-align:center}
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); background:#1b2430; border:1px solid var(--edge);
     color:var(--ink); padding:11px 18px; border-radius:10px; font-size:14px; opacity:0; transition:.25s; pointer-events:none; z-index:9}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
@@ -271,7 +288,7 @@
           <button class="act" id="btnGuincho">&#128666; Guincho</button>
           <button class="act" id="btnWhere">&#128205; Onde estou</button>
         </div>
-        <div class="coord-sub" style="margin-top:9px">Abre no Google Maps da central, com filtro de <b>aberto agora</b>, telefone e bot&atilde;o de ligar direto no resultado.</div>
+        <div class="coord-sub" style="margin-top:9px">Lista de <b>telefones</b> de oficinas e guinchos perto, com <b>aberto agora</b> e bot&atilde;o de ligar direto.</div>
       </div>
       <div class="tile">
         <div class="lbl">Contato de confian&ccedil;a &middot; resgate</div>
@@ -292,6 +309,13 @@
   </div>
 
   <p class="legend">Tudo aqui funciona s&oacute; com <b style="color:var(--dim)">GPS + internet</b> &mdash; a ADAK n&atilde;o tem aceler&ocirc;metro, ent&atilde;o o inclin&ocirc;metro do carro saiu.</p>
+</div>
+<div class="sosback" id="sosback">
+  <div class="soscard">
+    <div class="soshead"><h3 id="sosTitle">Oficinas pr&oacute;ximas</h3><button id="sosClose" aria-label="Fechar">&#10005;</button></div>
+    <div id="sosList"></div>
+    <div class="sosfoot">Exemplos &mdash; no app instalado a lista vem da sua regi&atilde;o pelo GPS. Toque em <b>Ligar</b> para chamar.</div>
+  </div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -425,10 +449,26 @@
   $('#btnShare').addEventListener('click',share);
   $('#btnCopy').addEventListener('click',()=>{ navigator.clipboard?.writeText(`${lat.toFixed(5)}, ${lon.toFixed(5)}`).catch(()=>{}); toast('Coordenada copiada'); });
 
-  // ---------- SOS ----------
-  function openMaps(q){ try{ window.open(`https://www.google.com/maps/search/${q}/@${lat.toFixed(5)},${lon.toFixed(5)},14z`,'_blank'); }catch(e){} }
-  $('#btnOfic').addEventListener('click',()=>{ openMaps('oficina+mec%C3%A2nica'); toast('Oficinas próximas no Google Maps'); });
-  $('#btnGuincho').addEventListener('click',()=>{ openMaps('guincho'); toast('Guincho próximo no Google Maps'); });
+  // ---------- SOS: lista de telefones ----------
+  const OFIC=[ {nm:'Auto Center Mantiqueira',dist:'3,2 km',open:true,tel:'+55 35 3341-0100'},
+               {nm:'Oficina do Zé 4x4',dist:'5,8 km',open:true,tel:'+55 35 99810-2200'},
+               {nm:'Mecânica Serrana',dist:'8,1 km',open:false,tel:'+55 35 3342-0300'} ];
+  const GUIN=[ {nm:'Guincho 24h Itamonte',dist:'4,0 km',open:true,tel:'+55 35 99999-0000'},
+               {nm:'Resgate Serra Fina',dist:'12 km',open:true,tel:'+55 35 98888-7777'} ];
+  const telHref=t=>'tel:'+t.replace(/[^0-9+]/g,'');
+  function openList(title,items){ $('#sosTitle').textContent=title;
+    $('#sosList').innerHTML=items.map(o=>`<div class="sositem"><div class="info">
+        <div class="nm">${o.nm}</div>
+        <div class="mt">${o.dist} · <span class="${o.open?'op':'cl'}">${o.open?'aberto agora':'fechado'}</span> · <span class="ph">${o.tel}</span></div>
+      </div><div class="acts">
+        <a class="callbtn" href="${telHref(o.tel)}">Ligar</a>
+        <a class="routebtn" href="https://www.google.com/maps/search/${encodeURIComponent(o.nm)}/@${lat.toFixed(5)},${lon.toFixed(5)},14z" target="_blank" rel="noopener">Rota</a>
+      </div></div>`).join('');
+    $('#sosback').classList.add('show'); }
+  $('#btnOfic').addEventListener('click',()=>openList('Oficinas próximas',OFIC));
+  $('#btnGuincho').addEventListener('click',()=>openList('Guincho próximo',GUIN));
+  $('#sosClose').addEventListener('click',()=>$('#sosback').classList.remove('show'));
+  $('#sosback').addEventListener('click',e=>{ if(e.target.id==='sosback') $('#sosback').classList.remove('show'); });
   $('#btnWhere').addEventListener('click',()=>{ navigator.clipboard?.writeText(locMsg()).catch(()=>{}); toast('Cidade + coordenada copiadas'); });
   const contactNum=$('#contactNum');
   try{ contactNum.value=localStorage.getItem('offroad_contact')||''; }catch(e){}

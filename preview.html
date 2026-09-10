@@ -109,6 +109,11 @@
     color:var(--dim); font-size:12.5px; letter-spacing:.05em; flex-wrap:wrap}
   .foot b{color:var(--ink); font-family:"Rajdhani"; font-weight:600}
   .legend{text-align:center; color:var(--faint); font-size:12px; margin-top:14px; letter-spacing:.04em}
+  #splash{position:fixed; inset:0; z-index:50; background:radial-gradient(120% 90% at 50% 18%, #10202c 0%, #06090d 68%); display:flex; align-items:center; justify-content:center; transition:opacity .5s ease}
+  #splash.hide{opacity:0; pointer-events:none}
+  #splashcv{width:100%; height:100%; display:block}
+  #skip{position:fixed; right:16px; bottom:14px; z-index:51; font:600 12px "Barlow Semi Condensed",sans-serif; letter-spacing:.12em; text-transform:uppercase; color:#7f8fa0; background:rgba(20,26,34,.7); border:1px solid #22303c; border-radius:8px; padding:7px 13px; cursor:pointer}
+  #splash.hide~#skip{display:none}
   .sosback{position:fixed; inset:0; background:rgba(4,7,11,.72); display:none; align-items:center; justify-content:center; z-index:8; padding:18px}
   .sosback.show{display:flex}
   .soscard{background:var(--panel); border:1px solid var(--edge); border-radius:16px; width:100%; max-width:460px; max-height:82vh; overflow:auto; box-shadow:0 24px 60px rgba(0,0,0,.6)}
@@ -131,6 +136,9 @@
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
   @media(prefers-reduced-motion:reduce){ *{animation:none!important; transition:none!important} }
 </style>
+
+<div id="splash"><canvas id="splashcv"></canvas></div>
+<button id="skip">Pular</button>
 
 <div class="wrap">
   <p class="demo-note">Prévia &middot; <b>dados simulados</b> &middot; clima:
@@ -585,5 +593,95 @@
   { const n=new Date(); $('#clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); }
   frame();
   if(reduce){ $('#altArc').setAttribute('d',altArcPath(1420)); for(let i=0;i<40;i++) spawn(); drawAmbient(); }
+})();
+</script>
+
+<script>
+/* ---------- Tela de entrada: jipinho sobe a montanha -> logo AVENTURE-SE no pneu ---------- */
+(function(){
+  const splash=document.getElementById('splash'), skip=document.getElementById('skip');
+  if(!splash) return;
+  const cv=document.getElementById('splashcv'), ctx=cv.getContext('2d');
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const OFFSET=parseFloat(new URLSearchParams(location.search).get('st'))||0; // scrub p/ testes
+  let W,H,dpr,terrain=[];
+  const smooth=x=>{ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x); };
+
+  function genTerrain(){ const N=140,pts=[]; const startY=H*0.82, peakY=H*0.36, peakX=W*0.74;
+    for(let i=0;i<=N;i++){ const x=i/N*W; let base;
+      if(x<peakX) base=startY+(peakY-startY)*Math.pow(x/peakX,0.92);
+      else base=peakY+(x-peakX)/(W-peakX)*(H*0.12);
+      const bump=Math.sin(x*0.028)*11+Math.sin(x*0.085+1)*6+Math.sin(x*0.015+2)*15;
+      pts.push({x, y: base - Math.abs(bump)*0.55}); }
+    return pts; }
+  function resize(){ dpr=Math.min(2,devicePixelRatio||1); W=innerWidth; H=innerHeight;
+    cv.width=W*dpr; cv.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); terrain=genTerrain(); }
+  resize(); addEventListener('resize',resize);
+  const yAt=x=>{ const N=terrain.length-1, fx=Math.max(0,Math.min(N,x/W*N)), i=Math.min(N-1,Math.floor(fx)), f=fx-i;
+    return terrain[i].y+(terrain[i+1].y-terrain[i].y)*f; };
+
+  function drawScene(alpha,jeepX){ ctx.save(); ctx.globalAlpha=alpha;
+    ctx.beginPath(); ctx.moveTo(0,H); for(const p of terrain) ctx.lineTo(p.x,p.y); ctx.lineTo(W,H); ctx.closePath();
+    ctx.fillStyle='#0b131b'; ctx.fill();
+    ctx.beginPath(); let s=false; for(const p of terrain){ if(p.x<=jeepX+2){ s?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y); s=true; } }
+    ctx.strokeStyle='#ff8a3d'; ctx.lineWidth=3; ctx.lineJoin='round'; ctx.stroke();
+    ctx.setLineDash([4,7]); ctx.beginPath(); s=false; for(const p of terrain){ if(p.x>=jeepX){ s?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y); s=true; } }
+    ctx.strokeStyle='#33465a'; ctx.lineWidth=2; ctx.stroke(); ctx.setLineDash([]); ctx.restore(); }
+
+  function drawJeep(x,y,ang,bob){ ctx.save(); ctx.translate(x,y-9+bob); ctx.rotate(ang); const s=1.15; ctx.scale(s,s);
+    ctx.fillStyle='rgba(255,224,150,.28)'; ctx.beginPath(); ctx.moveTo(17,-4); ctx.lineTo(46,-14); ctx.lineTo(46,4); ctx.closePath(); ctx.fill(); // farol
+    ctx.fillStyle='#0b0f14'; ctx.strokeStyle='#ffb45c'; ctx.lineWidth=2;
+    [[-11,7],[12,7]].forEach(([wx,wy])=>{ ctx.beginPath(); ctx.arc(wx,wy,6.5,0,7); ctx.fill(); ctx.stroke(); });
+    ctx.fillStyle='#182430'; ctx.strokeStyle='#ff8a3d'; ctx.lineWidth=2.5;
+    rr(-18,-6,36,13,3); ctx.fill(); ctx.stroke();               // corpo
+    rr(-7,-15,17,11,2); ctx.fill(); ctx.stroke();               // cabine
+    ctx.fillStyle='#0c141c'; rr(-4,-13,12,7,1.5); ctx.fill();   // vidro
+    ctx.fillStyle='#ffce54'; ctx.beginPath(); ctx.arc(17,-1,2.4,0,7); ctx.fill(); // farol ponto
+    ctx.restore(); }
+  function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+  function drawTire(cx,cy,R,rot,alpha,textA){ ctx.save(); ctx.globalAlpha=alpha; ctx.translate(cx,cy);
+    ctx.save(); ctx.rotate(rot);
+    const lugs=20; ctx.fillStyle='#0e141b';
+    for(let i=0;i<lugs;i++){ const a=i/lugs*Math.PI*2; ctx.save(); ctx.rotate(a);
+      rr(-R*0.09, -R-R*0.10, R*0.18, R*0.20, 3); ctx.fill(); ctx.restore(); }
+    ctx.beginPath(); ctx.arc(0,0,R,0,7); ctx.lineWidth=R*0.24; ctx.strokeStyle='#161d25'; ctx.stroke();       // borracha
+    ctx.beginPath(); ctx.arc(0,0,R*0.74,0,7); ctx.lineWidth=R*0.05; ctx.strokeStyle='#ff8a3d'; ctx.stroke();  // aro
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(0,0,R*0.70,0,7); ctx.fillStyle='#0c1219'; ctx.fill();                            // face
+    ctx.globalAlpha=alpha*textA; ctx.textAlign='center'; ctx.textBaseline='middle';
+    let fs=R*0.34; ctx.font=`700 ${fs}px Rajdhani, sans-serif`;
+    while(ctx.measureText('AVENTURE-SE').width>R*1.18 && fs>6){ fs-=1; ctx.font=`700 ${fs}px Rajdhani, sans-serif`; }
+    ctx.fillStyle='#ff8a3d'; ctx.fillText('AVENTURE', 0, -fs*0.55);
+    ctx.fillStyle='#eaf1f6'; ctx.fillText('-SE', 0, fs*0.55);
+    ctx.globalAlpha=alpha*textA; ctx.fillStyle='#5a6b7a'; ctx.font=`600 ${R*0.11}px "Barlow Semi Condensed",sans-serif`;
+    ctx.fillText('PAINEL DE EXPEDIÇÃO', 0, R*0.44);
+    ctx.restore(); }
+
+  let done=false, t0=null;
+  function finish(){ if(done) return; done=true; splash.classList.add('hide'); skip.style.display='none';
+    setTimeout(()=>{ splash.remove(); skip.remove(); }, 550); }
+  skip.addEventListener('click',finish);
+  splash.addEventListener('click',finish);
+  setTimeout(finish, 6000); // trava: nunca prender na abertura, mesmo se o rAF for pausado
+
+  const END=4.2;
+  function frame(now){ if(t0==null) t0=now; let t=(now-t0)/1000+OFFSET;
+    ctx.clearRect(0,0,W,H);
+    const climb=smooth((t-0.2)/2.3);
+    const jeepX=W*0.06+climb*(W*0.74-W*0.06);
+    const jeepY=yAt(jeepX), ang=Math.atan2(yAt(jeepX+6)-yAt(jeepX-6),12);
+    const bob=Math.sin(t*22)*1.2*(climb<1?1:0.3);
+    const sceneA=t<2.5?1:Math.max(0.10,1-(t-2.5)/0.7);
+    drawScene(sceneA, jeepX);
+    if(sceneA>0.12) drawJeep(jeepX, jeepY, ang, bob);
+    if(t>=2.35){ const ti=smooth((t-2.35)/0.85); const over=1+Math.sin(Math.min(1,ti)*Math.PI)*0.06;
+      const R=Math.min(W,H)*0.18*ti*over; const rot=(t<3.2)?(3.2-t)*5:(t-3.2)*0.25;
+      const textA=smooth((t-3.05)/0.8);
+      drawTire(W/2, H*0.48, Math.max(1,R), rot, Math.min(1,ti*1.2), textA); }
+    if(t>=END){ finish(); return; }
+    requestAnimationFrame(frame); }
+  if(reduce){ ctx.clearRect(0,0,W,H); drawScene(0.5,W*0.74); drawJeep(W*0.74,yAt(W*0.74),0,0); drawTire(W/2,H*0.48,Math.min(W,H)*0.18,0,1,1); setTimeout(finish,1200); }
+  else requestAnimationFrame(frame);
 })();
 </script>

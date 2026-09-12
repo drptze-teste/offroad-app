@@ -42,3 +42,9 @@ A central ADAK **só tem GPS** — sem acelerômetro e sem magnetômetro. Logo o
 - **SOS**: abrir Google Maps da central em "oficina mecânica"/"guincho" perto (filtro aberto agora + telefone nativos do Maps); **"Onde estou"** (cidade via geocodificação reversa + coordenada); **contato de confiança** salvo em localStorage + "Pedir resgate" via link wa.me (usuário confirma o envio).
 
 Pendências para o app real: geocodificação reversa da cidade (grátis, ex. BigDataCloud/Nominatim); decidir lista de oficinas "abertas agora" dentro do app (Google Places = pago) vs. abrir o Google Maps (grátis, recomendado).
+
+## Prévia v9 — duas telas deslizáveis + abertura Willys
+- `preview.html` agora tem **duas telas que trocam arrastando** (scroll-snap horizontal) com abas "Aventura" / "Deu Ruim":
+  - **Aventura:** altímetro, bússola, sol/luz, velocímetro + mapa e trajeto (odômetro/track/waypoints).
+  - **Deu Ruim:** SOS — DEU RUIM (oficinas/guincho → lista de telefones com Ligar), "Onde estou" (cidade/distrito/bairro), coordenadas para resgate e contato de confiança.
+- Abertura: jipe agora é um **Willys conversível** (cockpit aberto, para-brisa em pé, estepe) e o **pneu do logo ficou mais robusto** (banda grossa + garras alternadas).

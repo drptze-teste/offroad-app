@@ -47,7 +47,7 @@ window.OFF = window.OFF || {};
   ];
   // pré-preenchido só com tipos genéricos seguros; CÓDIGOS ficam em branco (confirme pela peça/fórum)
   OFF.manutDefaults = {
-    pajero: { oleo: '15W40 (confira motor: 4M40 diesel / V6 gasolina) · ~6 L', cambio: '75W90 GL-4/5', transfer: '80W90 GL-5', freio: 'DOT 4', radiador: 'Etilenoglicol (verde) + água desmineralizada 50/50', filtroOleo: '', filtroAr: '', filtroComb: '', filtroCabine: '', vela: '' },
+    pajero: { oleo: '5W30 ou 10W40 API SL+ (V6 3.0 6G72 gasolina) · ~4,5 L com filtro', cambio: '75W90 GL-4 (câmbio manual) · ~2,3 L', transfer: '80W90 GL-5 (transfer + diferenciais)', freio: 'DOT 4', radiador: 'Etilenoglicol long-life (verde) + água desmineralizada 50/50', filtroOleo: '', filtroAr: '', filtroComb: '', filtroCabine: '', vela: 'NGK/Denso — confira aplicação do 6G72' },
   };
   OFF.getManut = key => Object.assign({}, OFF.manutDefaults[key] || {}, U.load('manut_' + key, {}));
   OFF.saveManut = (key, obj) => U.save('manut_' + key, obj);

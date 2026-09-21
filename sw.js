@@ -1,5 +1,5 @@
 /* sw.js — offline-first para o app shell; APIs ficam network-only (o app faz cache próprio via localStorage). */
-const CACHE = 'offroad-app-v1';
+const CACHE = 'offroad-app-v2';
 const CORE = [
   './', './index.html', './css/app.css', './manifest.webmanifest', './icon.svg', './assets/intro.mp4',
   './js/util.js', './js/geo.js', './js/services.js', './js/fuel.js',

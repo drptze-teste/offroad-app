@@ -48,3 +48,12 @@ Pendências para o app real: geocodificação reversa da cidade (grátis, ex. Bi
   - **Aventura:** altímetro, bússola, sol/luz, velocímetro + mapa e trajeto (odômetro/track/waypoints).
   - **Deu Ruim:** SOS — DEU RUIM (oficinas/guincho → lista de telefones com Ligar), "Onde estou" (cidade/distrito/bairro), coordenadas para resgate e contato de confiança.
 - Abertura: jipe agora é um **Willys conversível** (cockpit aberto, para-brisa em pé, estepe) e o **pneu do logo ficou mais robusto** (banda grossa + garras alternadas).
+
+## APP REAL v1 (21/set/2026) — webapp instalável, offline-first
+Raiz `index.html` agora é o APP (a página de teste virou `teste-sensores.html`; `preview.html` = referência de design). Stack: HTML+CSS+JS puro, sem framework/sem build. Namespace global `OFF`.
+- Módulos em `js/`: `util` (formatos, coordenadas GMS/PlusCode, SunCalc inline p/ offline, haversine/bearing, load/save), `geo` (GPS real + modo `#sim`/`?sim=1`; odômetro trip + odoKm total, track, inclinação do terreno EMA, waypoints — tudo persistido), `services` (clima Open-Meteo, cidade BigDataCloud, oficinas/guincho Overpass/OSM — grátis, com cache e timeout), `fuel` (média km/L método tanque-cheio + autonomia), `vehicles` (specs aprox. por modelo + peças), `diagrams` (SVG educativos), `ui` (desenho dos relógios/bússola/sol/mini-mapa/clima), `app` (navegação, loop, fiação, abertura).
+- **5 telas** (nav inferior): Painel, Estrada, Consumo, Veículo, Socorro. Responsivo 7"→multimídias grandes (Tank 300 / Jetour T3 / Land Rover).
+- **PWA:** `manifest.webmanifest` (fullscreen/landscape), `sw.js` (cache-first do shell → offline; APIs passam pela rede). Instalável por "Adicionar à tela inicial". Wake Lock mantém a tela.
+- **Abertura:** vídeo do usuário `assets/intro.mp4` (Lego "Mundo dos Tijolos"), usa os 7 primeiros segundos (para em 7s por código) + botão Pular + trava 8s.
+- Verificado no modo `#sim` (o proxy do navegador remove `?query`, use hash): 5 telas OK, clima/cidade/oficinas reais responderam.
+- Pendências: PNGs de ícone (hoje SVG serve para Chrome Android); specs Jetour T3 conferir; bairro em zona rural vem como região IBGE (em cidade vem o bairro real).

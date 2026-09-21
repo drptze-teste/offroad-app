@@ -1,0 +1,165 @@
+:root{
+  --bg:#080b0f; --panel:#111820; --panel2:#0d141b; --edge:#22303c;
+  --ink:#eaf1f6; --dim:#7f8fa0; --faint:#3a4a58;
+  --amber:#ff8a3d; --amber-soft:#ffb45c; --level:#3ddc84; --warn:#ffd23f; --danger:#ff4d4d; --sky:#5aa9e6;
+  --tint:transparent;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:radial-gradient(120% 80% at 50% -10%,#0f1720 0%,var(--bg) 60%),var(--bg);
+  color:var(--ink);font-family:"Barlow Semi Condensed",system-ui,Roboto,Arial,sans-serif;
+  height:100vh;display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none}
+button{font-family:inherit}
+#ambient{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;background:var(--tint);transition:background .6s}
+.topbar,.screens,.nav{position:relative;z-index:2}
+
+/* ---------- barra de topo ---------- */
+.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;border-bottom:1px solid var(--edge);
+  background:linear-gradient(180deg,rgba(255,138,61,.06),transparent)}
+.brand{display:flex;align-items:center;gap:8px;font-family:"Rajdhani";font-weight:700;letter-spacing:.14em;font-size:15px}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 9px var(--amber)}
+.brand small{color:var(--amber-soft);font-weight:600}
+.chips{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:.04em;color:var(--dim);
+  background:var(--panel2);border:1px solid var(--edge);padding:4px 9px;border-radius:8px;font-variant-numeric:tabular-nums}
+.chip b{color:var(--ink);font-family:"Rajdhani";font-weight:600}
+.chip.bad{border-color:var(--danger)}.chip.bad b{color:var(--danger)}
+.tempcard{display:flex;align-items:center;gap:8px;padding:4px 10px;border-radius:9px;border:1px solid var(--edge);background:var(--panel2);min-width:96px}
+.tempcard .ic{font-size:18px}
+.tempcard .t{font-family:"Rajdhani";font-weight:700;font-size:19px;line-height:1;font-variant-numeric:tabular-nums}
+.tempcard .cap{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.simbadge{font-family:"Rajdhani";font-weight:700;letter-spacing:.1em;font-size:11px;color:#1a1206;background:var(--warn);padding:3px 8px;border-radius:6px}
+
+/* ---------- telas ---------- */
+.screens{flex:1;overflow:hidden}
+.screen{position:absolute;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px 14px;display:none;
+  top:0;bottom:0}
+.screen.active{display:block;animation:fade .25s}
+@keyframes fade{from{opacity:.4}to{opacity:1}}
+.screen-in{max-width:1400px;margin:0 auto}
+h2.sec{margin:2px 0 10px;font-family:"Rajdhani";font-weight:700;letter-spacing:.14em;font-size:14px;text-transform:uppercase;color:var(--dim)}
+
+/* ---------- nav inferior ---------- */
+.nav{display:flex;border-top:1px solid var(--edge);background:var(--panel2)}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;border:0;color:var(--dim);
+  padding:7px 4px 9px;cursor:pointer;font-size:11px;letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+.nav button .ic{font-size:20px;line-height:1}
+.nav button.on{color:var(--amber)}
+.nav button.on .ic{filter:drop-shadow(0 0 6px rgba(255,138,61,.5))}
+
+/* ---------- relógios ---------- */
+.gauges{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--edge);border:1px solid var(--edge);border-radius:14px;overflow:hidden}
+@media(max-width:720px){.gauges{grid-template-columns:1fr}}
+.gauge{background:var(--panel);padding:12px 12px 14px;display:flex;flex-direction:column;align-items:center}
+.gauge h3{margin:0 0 1px;font-family:"Rajdhani";font-weight:700;letter-spacing:.14em;font-size:13px;text-transform:uppercase;color:var(--dim)}
+.gauge .sub{font-size:11px;letter-spacing:.04em;color:var(--faint);margin-bottom:8px;text-align:center}
+.dial{position:relative;width:clamp(150px,24vw,210px);aspect-ratio:1;margin-bottom:4px}
+.dial svg{width:100%;height:100%;display:block}
+.readout{font-family:"Rajdhani";font-weight:700;font-variant-numeric:tabular-nums;line-height:1;text-align:center}
+.readout .big{font-size:clamp(30px,5vw,42px)}
+.readout .unit{font-size:17px;color:var(--dim);font-weight:600}
+.metrics{display:flex;gap:14px;margin-top:8px;width:100%;justify-content:center;flex-wrap:wrap}
+.metric{text-align:center}
+.metric .k{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.metric .v{font-family:"Rajdhani";font-weight:600;font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
+.compass-read{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.compass-read .card{font-family:"Rajdhani";font-weight:700;font-size:16px;color:var(--amber-soft);letter-spacing:.08em}
+
+/* ---------- tiles / linhas ---------- */
+.row{display:grid;gap:10px;margin-top:10px}
+.row.two{grid-template-columns:1fr 1fr}
+@media(max-width:720px){.row.two{grid-template-columns:1fr}}
+.tile{background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:13px 16px}
+.tile .lbl{font-family:"Rajdhani";font-weight:700;letter-spacing:.14em;font-size:12px;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.speedbig{font-family:"Rajdhani";font-weight:700;font-size:clamp(40px,8vw,64px);line-height:.9;font-variant-numeric:tabular-nums}
+.speedbig small{font-size:.4em;color:var(--dim)}
+.coord-main{font-family:"Rajdhani";font-weight:700;font-size:clamp(20px,3.4vw,28px);font-variant-numeric:tabular-nums}
+.coord-sub{color:var(--dim);font-size:13px;margin-top:3px;font-variant-numeric:tabular-nums}
+.coord-sub b{color:var(--ink);font-family:"Rajdhani";font-weight:600}
+.btnrow{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px;align-items:center}
+button.act{font-family:"Rajdhani";font-weight:700;letter-spacing:.04em;font-size:14px;border-radius:10px;padding:10px 16px;cursor:pointer;border:1px solid var(--edge);background:var(--panel2);color:var(--ink)}
+button.act:active{transform:translateY(1px)}
+button.act.primary{background:var(--amber);color:#1a1206;border-color:var(--amber)}
+button.act.sos{background:var(--danger);color:#fff;border-color:var(--danger);font-size:15px}
+button.act.rec.on{background:var(--danger);color:#fff;border-color:var(--danger)}
+.cinput{font:inherit;background:var(--panel2);border:1px solid var(--edge);color:var(--ink);border-radius:9px;padding:10px 13px;width:100%;max-width:320px}
+.cinput::placeholder{color:var(--faint)}
+
+.trip{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.trip .lead{display:flex;flex-direction:column;gap:2px;min-width:150px}
+.trip .eyebrow{font-family:"Rajdhani";font-weight:700;letter-spacing:.16em;font-size:12px;text-transform:uppercase;color:var(--amber-soft)}
+.trip .dist{font-family:"Rajdhani";font-weight:700;font-size:36px;line-height:1;font-variant-numeric:tabular-nums}
+.trip .dist small{font-size:16px;color:var(--dim)}
+.tstats{display:flex;gap:20px}
+.tstat .k{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.tstat .v{font-family:"Rajdhani";font-weight:600;font-size:18px;font-variant-numeric:tabular-nums}
+.ctrl{margin-left:auto;display:flex;gap:8px}
+.minimap{width:100%;height:120px;background:#0a1017;border:1px solid var(--edge);border-radius:10px;margin-top:8px;display:block}
+.wpbtns{display:flex;gap:9px;flex-wrap:wrap}
+.back-home{background:linear-gradient(180deg,rgba(61,220,132,.12),transparent)}
+.back-home .big-dist{font-family:"Rajdhani";font-weight:700;font-size:34px;color:var(--level);font-variant-numeric:tabular-nums}
+
+.wherebox{display:flex;gap:24px;flex-wrap:wrap;margin-top:12px}
+.wherebox>div{display:flex;flex-direction:column;gap:2px}
+.wherebox .wk{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.wherebox .wv{font-family:"Rajdhani";font-weight:600;font-size:19px;color:var(--ink)}
+.sos-title{font-family:"Rajdhani";font-weight:700;letter-spacing:.05em;font-size:26px;color:var(--danger);line-height:1}
+
+/* ---------- consumo ---------- */
+.fuel-big{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end}
+.fuel-big .n{font-family:"Rajdhani";font-weight:700;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
+.fuel-big .n small{font-size:.42em;color:var(--dim)}
+.fuel-big .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.hist{margin-top:10px;font-size:13px;color:var(--dim)}
+.hist div{padding:5px 0;border-bottom:1px dashed #1e2733;display:flex;justify-content:space-between;font-variant-numeric:tabular-nums}
+
+/* ---------- veículo ---------- */
+.vsel{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.vsel button{font-family:"Rajdhani";font-weight:700;letter-spacing:.04em;font-size:13px;border-radius:99px;padding:8px 16px;cursor:pointer;border:1px solid var(--edge);background:var(--panel2);color:var(--dim)}
+.vsel button.on{background:var(--amber);color:#1a1206;border-color:var(--amber)}
+.disclaimer{background:rgba(255,210,63,.08);border:1px solid rgba(255,210,63,.35);color:var(--warn);border-radius:10px;padding:9px 13px;font-size:12.5px;margin-bottom:10px}
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.vcard{background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column}
+.vcard .dia{background:#0a1017;border:1px solid var(--edge);border-radius:10px;padding:6px;margin-bottom:8px}
+.vcard .nm{font-family:"Rajdhani";font-weight:700;font-size:14px;letter-spacing:.03em;display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.vcard .val{font-family:"Rajdhani";font-weight:700;font-size:22px;color:var(--amber-soft);font-variant-numeric:tabular-nums}
+.vcard .val.warn{color:var(--warn)}
+.vcard .exp{font-size:12.5px;color:var(--dim);margin-top:5px;line-height:1.35}
+.vedit input{width:70px}
+.pecas{list-style:none;padding:0;margin:6px 0 0}
+.pecas li{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed #1e2733;font-size:14px}
+.pecas li:last-child{border-bottom:0}
+.pecas input{width:20px;height:20px;accent-color:var(--amber)}
+.pecas li.done{color:var(--faint);text-decoration:line-through}
+
+/* ---------- modal SOS ---------- */
+.sosback{position:fixed;inset:0;background:rgba(4,7,11,.72);display:none;align-items:center;justify-content:center;z-index:40;padding:16px}
+.sosback.show{display:flex}
+.soscard{background:var(--panel);border:1px solid var(--edge);border-radius:16px;width:100%;max-width:460px;max-height:82vh;overflow:auto;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+.soshead{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--edge);position:sticky;top:0;background:var(--panel)}
+.soshead h3{margin:0;font-family:"Rajdhani";font-weight:700;font-size:17px;flex:1}
+.soshead button{background:var(--panel2);border:1px solid var(--edge);color:var(--dim);border-radius:8px;width:34px;height:34px;cursor:pointer}
+.sositem{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--edge)}
+.sositem:last-child{border-bottom:0}
+.sositem .info{flex:1;min-width:0}
+.sositem .nm{font-family:"Rajdhani";font-weight:600;font-size:15px}
+.sositem .mt{font-size:12px;color:var(--dim);margin-top:2px}
+.sositem .mt .ph{font-family:"Rajdhani";font-weight:600;color:var(--amber-soft)}
+.callbtn{background:var(--level);color:#03210f;border:0;border-radius:9px;padding:9px 14px;font-family:"Rajdhani";font-weight:700;font-size:14px;text-decoration:none;display:inline-block}
+.routebtn{background:var(--panel2);color:var(--ink);border:1px solid var(--edge);border-radius:9px;padding:9px 11px;font-size:12px;text-decoration:none;display:inline-block}
+.sosfoot{padding:11px 16px}
+.sosfoot .act{width:100%;justify-content:center}
+.sosnote{padding:0 16px 12px;color:var(--faint);font-size:12px;text-align:center}
+
+/* ---------- splash ---------- */
+#splash{position:fixed;inset:0;z-index:50;background:radial-gradient(120% 90% at 50% 18%,#10202c 0%,#06090d 68%);display:flex;align-items:center;justify-content:center;transition:opacity .5s}
+#splash.hide{opacity:0;pointer-events:none}
+#splashcv{width:100%;height:100%;display:block}
+#introvid{width:100%;height:100%;object-fit:contain;background:#06090d;display:block}
+#skip{position:fixed;right:14px;bottom:12px;z-index:51;font:600 12px "Barlow Semi Condensed",sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#7f8fa0;background:rgba(20,26,34,.7);border:1px solid #22303c;border-radius:8px;padding:6px 12px;cursor:pointer}
+#splash.hide~#skip{display:none}
+
+.toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%) translateY(16px);background:#1b2430;border:1px solid var(--edge);color:var(--ink);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:45}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

@@ -1,0 +1,205 @@
+/* app.js — orquestra tudo: navegação, abertura, loop de GPS, consumo, veículo, socorro, PWA. */
+(function (OFF) {
+  'use strict';
+  const U = OFF.util, geo = OFF.geo, S = OFF.services, ui = OFF.ui, fuel = OFF.fuel;
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const SIM = params.has('sim') || location.hash.indexOf('sim') >= 0;
+
+  const toastEl = $('toast');
+  function toast(m) { toastEl.textContent = m; toastEl.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => toastEl.classList.remove('show'), 1900); }
+
+  // ---------- PWA ----------
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  let wakeLock = null;
+  async function keepAwake() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (_) {} }
+  keepAwake(); document.addEventListener('visibilitychange', () => { if (!document.hidden) keepAwake(); });
+
+  // ---------- navegação ----------
+  const screens = [...document.querySelectorAll('.screen')];
+  const navBtns = [...document.querySelectorAll('#nav button')];
+  function go(name) {
+    screens.forEach(s => s.classList.toggle('active', s.dataset.screen === name));
+    navBtns.forEach(b => b.classList.toggle('on', b.dataset.go === name));
+    if (name === 'consumo') renderFuel();
+    if (name === 'veiculo') renderVehicle();
+  }
+  navBtns.forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+
+  // ---------- localização compartilhável ----------
+  let lastPlace = U.load('place', null);
+  function locMsg() {
+    const c = lastPlace && lastPlace.city && lastPlace.city !== '—' ? lastPlace.city + '\n' : '';
+    return `Estou aqui\n${c}${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}\nhttps://maps.google.com/?q=${geo.lat.toFixed(5)},${geo.lon.toFixed(5)}`;
+  }
+  const copy = t => { try { navigator.clipboard.writeText(t); } catch (_) {} };
+
+  // ---------- painel: botões ----------
+  $('btnGo').addEventListener('click', () => { const on = geo.tripStart(); $('btnGo').classList.toggle('primary', !on); $('btnGo').innerHTML = on ? '❚❚ Pausar' : '▶ Ligar'; });
+  $('btnRst').addEventListener('click', () => { geo.tripReset(); toast('Odômetro zerado'); });
+  $('btnRec').addEventListener('click', () => { const on = geo.recStart(); $('btnRec').classList.toggle('on', on); $('btnRec').innerHTML = on ? '■ Parar' : '● Gravar'; toast(on ? 'Gravando a rota' : 'Gravação pausada'); });
+  $('btnGpx').addEventListener('click', exportGpx);
+  $('wpStart').addEventListener('click', () => geo.markWaypoint('Início') ? toast('Início marcado aqui') : toast('Sem GPS ainda'));
+  $('wpCar').addEventListener('click', () => geo.markWaypoint('Carro') ? toast('Carro marcado aqui') : toast('Sem GPS ainda'));
+  $('wpCamp').addEventListener('click', () => geo.markWaypoint('Acampamento') ? toast('Acampamento marcado') : toast('Sem GPS ainda'));
+
+  function exportGpx() {
+    if (!geo.track.length) return toast('Grave a rota primeiro');
+    let g = '<?xml version="1.0"?>\n<gpx version="1.1" creator="Offroad"><trk><name>Aventura</name><trkseg>\n';
+    geo.track.forEach(p => { g += `<trkpt lat="${p.lat.toFixed(6)}" lon="${p.lon.toFixed(6)}"></trkpt>\n`; });
+    g += '</trkseg></trk></gpx>';
+    try { const b = new Blob([g], { type: 'application/gpx+xml' }), u = URL.createObjectURL(b), a = document.createElement('a');
+      a.href = u; a.download = 'aventura.gpx'; a.click(); URL.revokeObjectURL(u); toast('GPX exportado (' + geo.track.length + ' pontos)'); }
+    catch (_) { toast('GPX pronto'); }
+  }
+
+  // ---------- socorro ----------
+  $('btnShare').addEventListener('click', () => { if (geo.lat == null) return toast('Sem GPS'); copy(locMsg()); toast('Localização copiada'); });
+  $('btnCopy').addEventListener('click', () => { if (geo.lat == null) return toast('Sem GPS'); copy(geo.lat.toFixed(5) + ', ' + geo.lon.toFixed(5)); toast('Coordenada copiada'); });
+  const contactNum = $('contactNum');
+  contactNum.value = U.load('contact', '') || '';
+  contactNum.addEventListener('change', () => U.save('contact', contactNum.value));
+  $('btnRescue').addEventListener('click', () => {
+    if (geo.lat == null) return toast('Sem GPS');
+    const num = (contactNum.value || '').replace(/\D/g, '');
+    const city = lastPlace && lastPlace.city && lastPlace.city !== '—' ? ' (' + lastPlace.city + ')' : '';
+    const text = encodeURIComponent(`SOS! Preciso de ajuda${city}. ${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}. https://maps.google.com/?q=${geo.lat.toFixed(5)},${geo.lon.toFixed(5)}`);
+    if (num) { try { window.open(`https://wa.me/${num}?text=${text}`, '_blank'); } catch (_) {} toast('Abrindo WhatsApp (você confirma o envio)'); }
+    else toast('Defina o WhatsApp do contato');
+  });
+  $('btnWhere').addEventListener('click', () => {
+    if (geo.lat == null) return toast('Sem GPS');
+    if (!U.online()) { fillPlace(lastPlace); return toast('Offline — mostrando último conhecido'); }
+    toast('Buscando cidade…');
+    S.place(geo.lat, geo.lon).then(p => { lastPlace = p; fillPlace(p); copy(locMsg()); toast(p ? 'Localização copiada' : 'Não encontrei a cidade'); });
+  });
+  function fillPlace(p) { $('wCity').textContent = (p && p.city) || '—'; $('wDist').textContent = (p && p.district) || '—'; $('wHood').textContent = (p && p.hood) || '—'; }
+  fillPlace(lastPlace);
+
+  // modal oficinas/guincho
+  const telHref = t => 'tel:' + (t || '').replace(/[^0-9+]/g, '');
+  function openList(title, promise, q) {
+    $('sosTitle').textContent = title;
+    $('sosList').innerHTML = '<div class="sositem"><div class="info">Buscando perto de você…</div></div>';
+    $('sosMaps').href = geo.lat != null ? S.mapsSearch(q, geo.lat, geo.lon) : '#';
+    $('sosback').classList.add('show');
+    promise.then(items => {
+      if (!items.length) { $('sosList').innerHTML = '<div class="sositem"><div class="info">Nada no OpenStreetMap aqui. Use o Google Maps abaixo.</div></div>'; return; }
+      $('sosList').innerHTML = items.map(o => `<div class="sositem"><div class="info">
+        <div class="nm">${esc(o.nm)}</div>
+        <div class="mt">${o.dist != null ? U.fmtKm(o.dist) + ' km' : ''}${o.tel ? ' · <span class="ph">' + esc(o.tel) + '</span>' : ' · sem telefone'}${o.hours ? ' · ' + esc(o.hours) : ''}</div>
+      </div><div class="acts">${o.tel ? `<a class="callbtn" href="${telHref(o.tel)}">Ligar</a>` : ''}
+        ${o.lat != null ? `<a class="routebtn" href="https://www.google.com/maps/search/?api=1&query=${o.lat},${o.lon}" target="_blank" rel="noopener">Rota</a>` : ''}</div></div>`).join('');
+    });
+  }
+  const esc = s => String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+  $('btnOfic').addEventListener('click', () => { if (geo.lat == null) return toast('Sem GPS'); openList('Oficinas próximas', S.oficinas(geo.lat, geo.lon), 'oficina mecânica'); });
+  $('btnGuincho').addEventListener('click', () => { if (geo.lat == null) return toast('Sem GPS'); openList('Guincho / reboque', S.guincho(geo.lat, geo.lon), 'guincho'); });
+  $('sosClose').addEventListener('click', () => $('sosback').classList.remove('show'));
+  $('sosback').addEventListener('click', e => { if (e.target.id === 'sosback') $('sosback').classList.remove('show'); });
+
+  // ---------- consumo ----------
+  $('fuelTank').value = fuel.tank;
+  $('fuelTank').addEventListener('change', () => { fuel.setTank($('fuelTank').value); renderFuel(); });
+  $('fuelAdd').addEventListener('click', () => { const L = $('fuelLiters').value; if (fuel.addFill(L, geo.odoKm)) { $('fuelLiters').value = ''; toast('Abastecimento registrado'); renderFuel(); } else toast('Informe os litros'); });
+  $('fuelUndo').addEventListener('click', () => { fuel.undo(); renderFuel(); toast('Último removido'); });
+  $('fuelReset').addEventListener('click', () => { fuel.reset(); renderFuel(); toast('Histórico zerado'); });
+  function renderFuel() {
+    const a = fuel.avgKmL(), rf = fuel.rangeFull(), rl = fuel.rangeLeft(geo.odoKm);
+    $('fuelAvg').textContent = a ? a.toFixed(1).replace('.', ',') : '—';
+    $('fuelRange').textContent = rf ? Math.round(rf) : '—';
+    $('fuelLeft').textContent = rl != null ? Math.round(rl) : '—';
+    $('fuelHist').innerHTML = fuel.log.length ? fuel.log.slice().reverse().map((e, i, arr) => {
+      const idx = fuel.log.length - i;
+      return `<div><span>#${idx} · ${e.liters} L</span><span>odô ${e.odo.toFixed(1)} km</span></div>`;
+    }).join('') : '<div style="border:0">Sem abastecimentos ainda.</div>';
+  }
+
+  // ---------- veículo ----------
+  function renderVehicle() {
+    const vehs = OFF.getVehicles(), sel = OFF.selectedVeh();
+    $('vsel').innerHTML = Object.keys(vehs).map(k => `<button data-v="${k}" class="${k === sel ? 'on' : ''}">${esc(vehs[k].nome)}</button>`).join('');
+    [...$('vsel').children].forEach(b => b.addEventListener('click', () => { OFF.selectVeh(b.dataset.v); renderVehicle(); }));
+    const v = vehs[sel], editing = v.editavel;
+    $('vgrid').innerHTML = OFF.specMeta.map(m => {
+      const val = v[m.key]; const has = val !== '' && val != null;
+      const valHtml = editing
+        ? `<input class="cinput vedit" data-k="${m.key}" type="number" inputmode="numeric" value="${has ? val : ''}" placeholder="—"> ${m.un}`
+        : `<span class="val ${m.aviso ? 'warn' : ''}">${has ? val + ' ' + m.un : '—'}</span>`;
+      return `<div class="vcard"><div class="dia">${OFF.diagrams[m.dia]()}</div>
+        <div class="nm"><span>${m.nome}</span>${editing ? '' : valHtml}</div>
+        ${editing ? '<div class="nm" style="margin-top:6px">' + valHtml + '</div>' : ''}
+        <div class="exp">${m.exp}</div></div>`;
+    }).join('');
+    if (editing) [...document.querySelectorAll('.vedit')].forEach(inp => inp.addEventListener('change', () => {
+      const obj = { nome: v.nome }; document.querySelectorAll('.vedit').forEach(x => obj[x.dataset.k] = x.value === '' ? '' : +x.value);
+      OFF.saveMeu(obj); toast('Meu veículo salvo');
+    }));
+    // peças
+    const done = U.load('pecas_done', {});
+    $('pecas').innerHTML = OFF.pecas.map((p, i) => `<li class="${done[i] ? 'done' : ''}"><input type="checkbox" data-i="${i}" ${done[i] ? 'checked' : ''}><span>${esc(p)}</span></li>`).join('');
+    [...document.querySelectorAll('#pecas input')].forEach(c => c.addEventListener('change', () => {
+      const d = U.load('pecas_done', {}); d[c.dataset.i] = c.checked; U.save('pecas_done', d); c.closest('li').classList.toggle('done', c.checked);
+    }));
+  }
+
+  // ---------- clima + cidade (internet, com cache) ----------
+  let lastWxTs = 0, lastPlaceTs = 0;
+  function refreshWeather() { if (geo.lat == null || !U.online()) { ui.setWeather(U.load('weather', null)); return; } S.weather(geo.lat, geo.lon).then(w => ui.setWeather(w)); lastWxTs = Date.now(); }
+  function maybeServices() {
+    if (geo.lat == null) return;
+    const now = Date.now();
+    if (now - lastWxTs > 15 * 60000) refreshWeather();
+    if (U.online() && now - lastPlaceTs > 5 * 60000) { lastPlaceTs = now; S.place(geo.lat, geo.lon).then(p => { if (p) { lastPlace = p; } }); }
+  }
+
+  // ---------- loop principal ----------
+  let firstFix = false;
+  geo.on(g => { ui.update(g, lastPlace); if (!firstFix && g.lat != null) { firstFix = true; refreshWeather(); if (U.online()) S.place(g.lat, g.lon).then(p => { if (p) { lastPlace = p; fillPlace(p); } }); } });
+
+  function estrada() {
+    $('eSpd').textContent = geo.lat == null ? '—' : Math.round(geo.speed);
+    $('eHdg').textContent = geo.heading == null ? 'parado' : Math.round(geo.heading) + '° ' + U.cardeal(geo.heading);
+    $('eAvg').textContent = Math.round(geo.avgSpeed());
+    $('eCity').textContent = (lastPlace && lastPlace.city) || '—';
+    $('eCoord').textContent = geo.lat == null ? '—' : geo.lat.toFixed(5) + ', ' + geo.lon.toFixed(5);
+    $('eOdo').textContent = geo.odoKm.toFixed(0);
+    const rl = fuel.rangeLeft(geo.odoKm), rf = fuel.rangeFull();
+    $('eRange').textContent = rl != null ? Math.round(rl) : (rf ? Math.round(rf) : '—');
+  }
+
+  let acc = 0, last = performance.now();
+  function loop(now) {
+    const dt = now - last; last = now;
+    ui.tickSmooth(geo); ui.tickAmbient();
+    acc += dt;
+    if (acc > 500) { acc = 0; estrada(); maybeServices(); if ($('consumo') || document.querySelector('.screen[data-screen="consumo"]').classList.contains('active')) renderFuel(); }
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- boot ----------
+  ui.buildStatic();
+  if (SIM) { $('simBadge').hidden = false; geo.startSim(); } else geo.startReal();
+  requestAnimationFrame(loop);
+  runSplash();
+
+  // relógio nada, mas mantém serviços vivos
+  setInterval(maybeServices, 60000);
+
+  /* ================= ABERTURA (vídeo do jipinho Lego — 7 s) ================= */
+  function runSplash() {
+    const splash = $('splash'), skip = $('skip'); if (!splash) return;
+    if (params.has('nosplash')) { splash.remove(); skip.remove(); return; }
+    const v = $('introvid'); let done = false;
+    function finish() { if (done) return; done = true; try { v && v.pause(); } catch (_) {} splash.classList.add('hide'); skip.style.display = 'none'; setTimeout(() => { splash.remove(); skip.remove(); }, 550); }
+    skip.addEventListener('click', finish);
+    splash.addEventListener('click', () => { if (v && v.paused) { v.play().catch(() => {}); } });   // toque tenta (re)iniciar
+    if (v) {
+      v.addEventListener('timeupdate', () => { if (v.currentTime >= 7) finish(); });                 // usa só os 7 primeiros segundos
+      v.addEventListener('ended', finish);
+      v.addEventListener('error', () => setTimeout(finish, 300));
+      const p = v.play(); if (p && p.catch) p.catch(() => {});                                        // autoplay mudo
+    }
+    setTimeout(finish, 8000); // trava de segurança
+  }
+})(window.OFF);

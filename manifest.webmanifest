@@ -1,0 +1,16 @@
+{
+  "name": "Off-road — Painel de Expedição",
+  "short_name": "Off-road",
+  "description": "Painel de expedição off-road: GPS, altímetro, bússola, voltar ao início, consumo, limites do 4x4 e SOS. Funciona offline.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#080b0f",
+  "theme_color": "#080b0f",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

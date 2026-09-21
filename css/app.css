@@ -132,6 +132,10 @@ button.act.rec.on{background:var(--danger);color:#fff;border-color:var(--danger)
 .pecas li:last-child{border-bottom:0}
 .pecas input{width:20px;height:20px;accent-color:var(--amber)}
 .pecas li.done{color:var(--faint);text-decoration:line-through}
+.mrow{display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px dashed #1e2733;flex-wrap:wrap}
+.mrow:last-child{border-bottom:0}
+.mrow .mk{flex:1;min-width:170px;font-size:14px;color:var(--dim)}
+.mrow .medit{max-width:300px}
 
 /* ---------- modal SOS ---------- */
 .sosback{position:fixed;inset:0;background:rgba(4,7,11,.72);display:none;align-items:center;justify-content:center;z-index:40;padding:16px}

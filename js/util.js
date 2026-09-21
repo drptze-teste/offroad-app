@@ -18,7 +18,8 @@ window.OFF = window.OFF || {};
   // ---------- coordenadas ----------
   U.dms = (v, pos, neg) => {
     const h = v >= 0 ? pos : neg; v = Math.abs(v);
-    const d = Math.floor(v), m = Math.floor((v - d) * 60), s = Math.round((v - d - m / 60) * 3600);
+    let d = Math.floor(v), m = Math.floor((v - d) * 60), s = Math.round((v - d - m / 60) * 3600);
+    if (s === 60) { s = 0; m++; } if (m === 60) { m = 0; d++; }
     return `${d}°${U.pad2(m)}'${U.pad2(s)}"${h}`;
   };
   U.coordDMS = (lat, lon) => U.dms(lat, 'N', 'S') + '  ' + U.dms(lon, 'L', 'O');

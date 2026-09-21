@@ -6,7 +6,8 @@ const CORE = [
   './js/vehicles.js', './js/diagrams.js', './js/ui.js', './js/app.js',
 ];
 
-self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).catch(() => {})); self.skipWaiting(); });
+// cache item a item: um arquivo que falhe (ex.: o vídeo grande) não impede os outros de cachear
+self.addEventListener('install', e => { e.waitUntil((async () => { const c = await caches.open(CACHE); await Promise.allSettled(CORE.map(u => c.add(u))); })()); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); });
 
 self.addEventListener('fetch', e => {

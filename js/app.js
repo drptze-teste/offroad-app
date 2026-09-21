@@ -98,6 +98,29 @@
   $('sosClose').addEventListener('click', () => $('sosback').classList.remove('show'));
   $('sosback').addEventListener('click', e => { if (e.target.id === 'sosback') $('sosback').classList.remove('show'); });
 
+  // ---------- Spotify (atalho + playlists salvas offline) ----------
+  function renderPlaylists() {
+    const pls = U.load('playlists', []);
+    $('plList').innerHTML = pls.length ? pls.map((p, i) => `<span style="display:inline-flex;gap:4px"><a class="act" href="${esc(p.u)}" target="_blank" rel="noopener">▶ ${esc(p.t)}</a><button class="act" data-del="${i}" style="padding:9px 11px">✕</button></span>`).join('') : '<span class="coord-sub">nenhuma playlist salva ainda</span>';
+    [...document.querySelectorAll('#plList [data-del]')].forEach(b => b.addEventListener('click', () => { const a = U.load('playlists', []); a.splice(+b.dataset.del, 1); U.save('playlists', a); renderPlaylists(); }));
+  }
+  $('plAdd').addEventListener('click', () => {
+    const u = $('plInput').value.trim(); if (!/^https?:\/\//.test(u) && !/^spotify:/.test(u)) return toast('Cole um link do Spotify');
+    const a = U.load('playlists', []); a.push({ t: 'Playlist ' + (a.length + 1), u }); U.save('playlists', a); $('plInput').value = ''; renderPlaylists(); toast('Playlist salva');
+  });
+  renderPlaylists();
+
+  // ---------- escolha do carro na 1ª abertura ----------
+  function firstRunCar() {
+    if (U.load('seen', false)) return;
+    const vehs = OFF.getVehicles();
+    $('carList').innerHTML = Object.keys(vehs).map(k => `<button class="act" data-v="${k}" style="width:100%;justify-content:flex-start;margin-bottom:8px">${esc(vehs[k].nome)}</button>`).join('');
+    $('carback').classList.add('show');
+    const pick = k => { if (k) OFF.selectVeh(k); U.save('seen', true); $('carback').classList.remove('show'); };
+    [...document.querySelectorAll('#carList [data-v]')].forEach(b => b.addEventListener('click', () => pick(b.dataset.v)));
+    $('carSkip').addEventListener('click', () => pick(null));
+  }
+
   // ---------- consumo ----------
   $('fuelTank').value = fuel.tank;
   $('fuelTank').addEventListener('change', () => { fuel.setTank($('fuelTank').value); renderFuel(); });
@@ -141,6 +164,19 @@
     [...document.querySelectorAll('#pecas input')].forEach(c => c.addEventListener('change', () => {
       const d = U.load('pecas_done', {}); d[c.dataset.i] = c.checked; U.save('pecas_done', d); c.closest('li').classList.toggle('done', c.checked);
     }));
+    // manutenção & fluidos (editável, offline)
+    const man = OFF.getManut(sel);
+    $('manut').innerHTML = OFF.manutMeta.map(m => `<div class="mrow"><span class="mk">${esc(m.nome)}</span><input class="cinput medit" data-k="${m.key}" value="${esc(man[m.key] || '')}" placeholder="— toque para preencher"></div>`).join('');
+    [...document.querySelectorAll('.medit')].forEach(inp => inp.addEventListener('change', () => {
+      const o = {}; document.querySelectorAll('.medit').forEach(x => o[x.dataset.k] = x.value); OFF.saveManut(sel, o); toast('Manutenção salva');
+    }));
+    // fóruns & peças (busca — sempre válida, abre com internet)
+    const nm = encodeURIComponent(v.nome.replace(/\(.*\)/, '').trim());
+    $('forums').innerHTML = [
+      ['🔧 Fórum & manutenção', `https://www.google.com/search?q=${nm}+f%C3%B3rum+manuten%C3%A7%C3%A3o`],
+      ['🔎 Códigos de filtro', `https://www.google.com/search?q=${nm}+c%C3%B3digo+filtro+%C3%B3leo+ar+combust%C3%ADvel+cabine`],
+      ['🛒 Peças', `https://www.google.com/search?q=pe%C3%A7as+${nm}`],
+    ].map(([t, u]) => `<a class="act" href="${u}" target="_blank" rel="noopener">${t}</a>`).join('');
   }
 
   // ---------- clima + cidade (internet, com cache) ----------
@@ -168,13 +204,16 @@
     $('eRange').textContent = rl != null ? Math.round(rl) : (rf ? Math.round(rf) : '—');
   }
 
+  const isActive = name => { const s = document.querySelector('.screen[data-screen="' + name + '"]'); return s && s.classList.contains('active'); };
   let acc = 0, last = performance.now();
   function loop(now) {
-    const dt = now - last; last = now;
-    ui.tickSmooth(geo); ui.tickAmbient();
-    acc += dt;
-    if (acc > 500) { acc = 0; estrada(); maybeServices(); if ($('consumo') || document.querySelector('.screen[data-screen="consumo"]').classList.contains('active')) renderFuel(); }
-    requestAnimationFrame(loop);
+    try {
+      const dt = now - last; last = now;
+      ui.tickSmooth(geo); ui.tickAmbient();
+      acc += dt;
+      if (acc > 500) { acc = 0; estrada(); maybeServices(); if (isActive('consumo')) renderFuel(); }
+    } catch (_) { /* nunca deixa o loop morrer */ }
+    finally { requestAnimationFrame(loop); }
   }
 
   // ---------- boot ----------
@@ -182,6 +221,7 @@
   if (SIM) { $('simBadge').hidden = false; geo.startSim(); } else geo.startReal();
   requestAnimationFrame(loop);
   runSplash();
+  firstRunCar();
 
   // relógio nada, mas mantém serviços vivos
   setInterval(maybeServices, 60000);

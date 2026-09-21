@@ -85,7 +85,7 @@ window.OFF = window.OFF || {};
   // ---------- controles ----------
   geo.tripStart = () => { geo.trip.on = !geo.trip.on; return geo.trip.on; };
   geo.tripReset = () => { geo.trip = { on: geo.trip.on, dist: 0, moveSec: 0, climb: 0, vmax: 0 }; emit(); };
-  geo.recStart = () => { geo.recording = !geo.recording; if (geo.recording) lastTrackPt = geo.lat ? { lat: geo.lat, lon: geo.lon } : null; return geo.recording; };
+  geo.recStart = () => { geo.recording = !geo.recording; if (geo.recording) lastTrackPt = geo.lat != null ? { lat: geo.lat, lon: geo.lon } : null; return geo.recording; };
   geo.markWaypoint = name => { if (geo.lat == null) return false; geo.waypoints[name] = { lat: geo.lat, lon: geo.lon }; geo.active = name; U.save('waypoints', geo.waypoints); U.save('wpActive', name); emit(); return true; };
   geo.setActive = name => { geo.active = name; U.save('wpActive', name); emit(); };
   geo.toTarget = () => {

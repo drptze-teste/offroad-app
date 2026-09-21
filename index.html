@@ -125,6 +125,15 @@
         <div class="coord-sub" style="margin-top:4px">rodou hoje <b id="eOdo">0</b> km · veja Consumo</div>
       </div>
     </div>
+    <div class="tile" style="margin-top:10px"><div class="lbl">Som · Spotify</div>
+      <div class="btnrow" style="margin-top:0">
+        <a class="act primary" href="https://open.spotify.com" target="_blank" rel="noopener">▶ Abrir Spotify</a>
+        <input class="cinput" id="plInput" placeholder="colar link de playlist" style="max-width:260px">
+        <button class="act" id="plAdd">+ Salvar</button>
+      </div>
+      <div class="btnrow" id="plList" style="margin-top:8px"></div>
+      <div class="coord-sub" style="margin-top:6px">Suas playlists ficam salvas offline; um toque abre no Spotify. Puxar as “mais tocadas” automático precisa de login — fase 2.</div>
+    </div>
   </div></section>
 
   <!-- 3. CONSUMO -->
@@ -161,6 +170,13 @@
     <div class="vgrid" id="vgrid"></div>
     <div class="tile" style="margin-top:12px"><div class="lbl">Peças de reposição / kit de trilha</div>
       <ul class="pecas" id="pecas"></ul>
+    </div>
+    <div class="tile" style="margin-top:10px"><div class="lbl">Manutenção & fluidos · edite e fica salvo offline</div>
+      <div class="disclaimer">Códigos de filtro variam pelo motor e ano — confirme pela peça original ou no fórum. O app guarda o que você digitar.</div>
+      <div id="manut"></div>
+    </div>
+    <div class="tile" style="margin-top:10px"><div class="lbl">Fóruns & peças · abre com internet</div>
+      <div class="btnrow" id="forums"></div>
     </div>
   </div></section>
 
@@ -205,6 +221,14 @@
   <div id="sosList"></div>
   <div class="sosfoot"><a class="act primary" id="sosMaps" href="#" target="_blank" rel="noopener">Ver no Google Maps (aberto agora)</a></div>
   <div class="sosnote">Lista do OpenStreetMap (offline pode faltar telefone). O Google Maps mostra horário e telefone de todos.</div>
+</div></div>
+
+<!-- ESCOLHA DO CARRO (1ª abertura) -->
+<div class="sosback" id="carback"><div class="soscard">
+  <div class="soshead"><h3>Qual é o seu carro?</h3></div>
+  <div id="carList" style="padding:10px 16px 4px"></div>
+  <div class="sosfoot"><button class="act" id="carSkip" style="width:100%;justify-content:center">Escolher depois</button></div>
+  <div class="sosnote">Você troca quando quiser na tela Veículo. Specs e manutenção ficam salvas offline.</div>
 </div></div>
 
 <div class="toast" id="toast"></div>

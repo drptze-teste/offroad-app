@@ -25,11 +25,32 @@ window.OFF = window.OFF || {};
 
   // valores aproximados — SEMPRE conferir no manual. '' = preencher em Meu veículo.
   OFF.vehicles = {
+    pajero:   { nome: 'Mitsubishi Pajero GLS-B 1999 (3p)', ataque: 40, saida: 25, rampa: 22, solo: 235, vadeacao: 500, inclinacao: '', guincho: '', aprox: true },
     meu:      { nome: 'Meu veículo', editavel: true, ataque: '', saida: '', rampa: '', solo: '', vadeacao: '', inclinacao: '', guincho: '' },
     tank300:  { nome: 'GWM Tank 300', ataque: 33, saida: 34, rampa: 23, solo: 224, vadeacao: 700, inclinacao: '', guincho: '' },
     defender: { nome: 'Land Rover Defender', ataque: 38, saida: 40, rampa: 28, solo: 291, vadeacao: 900, inclinacao: 45, guincho: '' },
     jetourt3: { nome: 'Jetour T3', ataque: 37, saida: 35, rampa: 24, solo: 220, vadeacao: 600, inclinacao: '', guincho: '', aprox: true },
   };
+
+  // ---------- ficha de manutenção (editável, offline) ----------
+  OFF.manutMeta = [
+    { key: 'oleo', nome: 'Óleo do motor' },
+    { key: 'cambio', nome: 'Óleo do câmbio' },
+    { key: 'transfer', nome: 'Transfer / diferencial (4x4)' },
+    { key: 'freio', nome: 'Fluido de freio' },
+    { key: 'radiador', nome: 'Aditivo do radiador' },
+    { key: 'filtroOleo', nome: 'Filtro de óleo (código)' },
+    { key: 'filtroAr', nome: 'Filtro de ar (código)' },
+    { key: 'filtroComb', nome: 'Filtro de combustível (código)' },
+    { key: 'filtroCabine', nome: 'Filtro do ar-condicionado (código)' },
+    { key: 'vela', nome: 'Vela / bico injetor' },
+  ];
+  // pré-preenchido só com tipos genéricos seguros; CÓDIGOS ficam em branco (confirme pela peça/fórum)
+  OFF.manutDefaults = {
+    pajero: { oleo: '15W40 (confira motor: 4M40 diesel / V6 gasolina) · ~6 L', cambio: '75W90 GL-4/5', transfer: '80W90 GL-5', freio: 'DOT 4', radiador: 'Etilenoglicol (verde) + água desmineralizada 50/50', filtroOleo: '', filtroAr: '', filtroComb: '', filtroCabine: '', vela: '' },
+  };
+  OFF.getManut = key => Object.assign({}, OFF.manutDefaults[key] || {}, U.load('manut_' + key, {}));
+  OFF.saveManut = (key, obj) => U.save('manut_' + key, obj);
 
   // peças de reposição / kit básico de trilha (genérico, seguro para qualquer 4x4)
   OFF.pecas = [
@@ -54,6 +75,6 @@ window.OFF = window.OFF || {};
     return OFF.vehicles;
   };
   OFF.saveMeu = obj => U.save('veh_meu', Object.assign({ nome: obj.nome || 'Meu veículo' }, obj));
-  OFF.selectedVeh = () => U.load('veh_sel', 'meu');
+  OFF.selectedVeh = () => U.load('veh_sel', 'pajero');
   OFF.selectVeh = k => U.save('veh_sel', k);
 })(window.OFF);

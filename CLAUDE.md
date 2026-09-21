@@ -57,3 +57,10 @@ Raiz `index.html` agora é o APP (a página de teste virou `teste-sensores.html`
 - **Abertura:** vídeo do usuário `assets/intro.mp4` (Lego "Mundo dos Tijolos"), usa os 7 primeiros segundos (para em 7s por código) + botão Pular + trava 8s.
 - Verificado no modo `#sim` (o proxy do navegador remove `?query`, use hash): 5 telas OK, clima/cidade/oficinas reais responderam.
 - Pendências: PNGs de ícone (hoje SVG serve para Chrome Android); specs Jetour T3 conferir; bairro em zona rural vem como região IBGE (em cidade vem o bairro real).
+
+## v1.1 (21/set/2026) — carro do usuário, manutenção, Spotify, correções da revisão
+- Carro do usuário: **Mitsubishi Pajero GLS-B 1999 (3p)** como preset e selecionado por padrão (specs aprox., editáveis).
+- **Escolha do carro na 1ª abertura** (modal #carback; flag `off_seen`).
+- Tela Veículo: **ficha de Manutenção & fluidos editável offline** (óleo/câmbio/transfer/freio/radiador + códigos de filtro em branco p/ preencher) + **Fóruns & peças** (links de busca Google gerados do nome do modelo). Códigos de peça NÃO são inventados (sem API confiável grátis) — usuário preenche/consulta fórum.
+- Tela Estrada: **Som · Spotify** — Abrir Spotify + playlists salvas offline (localStorage). "Mais tocadas" automático e "tocar no player" = fase 2 (precisa OAuth/Premium, online).
+- Correções da revisão por subagente: SW cacheia item a item (`Promise.allSettled`, o vídeo de 4,77MB não derruba o offline); `loop()` com try/finally (um erro nunca congela o rAF); removido código morto `$('consumo')`; DMS trata carry de 60"; `recStart` usa `!= null`.

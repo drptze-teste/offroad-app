@@ -164,6 +164,17 @@ button.act.rec.on{background:var(--danger);color:#fff;border-color:var(--danger)
 #skip{position:fixed;right:14px;bottom:12px;z-index:51;font:600 12px "Barlow Semi Condensed",sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#7f8fa0;background:rgba(20,26,34,.7);border:1px solid #22303c;border-radius:8px;padding:6px 12px;cursor:pointer}
 #splash.hide~#skip{display:none}
 
+/* ---------- voz ---------- */
+#micbtn{position:fixed;right:16px;bottom:70px;z-index:30;width:60px;height:60px;border-radius:50%;border:0;cursor:pointer;
+  background:var(--amber);color:#1a1206;font-size:26px;box-shadow:0 8px 24px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
+#micbtn:active{transform:translateY(1px)}
+#micbtn.listening{background:var(--danger);color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,77,77,.5)}50%{box-shadow:0 0 0 14px rgba(255,77,77,0)}}
+#voicebubble{position:fixed;right:16px;bottom:140px;z-index:30;max-width:min(460px,80vw);background:#1b2430;border:1px solid var(--edge);
+  color:var(--ink);padding:12px 16px;border-radius:14px;font-size:15px;line-height:1.35;box-shadow:0 10px 30px rgba(0,0,0,.5);
+  opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none}
+#voicebubble.show{opacity:1;transform:translateY(0)}
+select.cinput{padding:8px 10px}
 .toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%) translateY(16px);background:#1b2430;border:1px solid var(--edge);color:var(--ink);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:45}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

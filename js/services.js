@@ -80,4 +80,15 @@ window.OFF = window.OFF || {};
 
   // link p/ Google Maps (fallback com "aberto agora" e telefone nativos)
   S.mapsSearch = (q, lat, lon) => `https://www.google.com/maps/search/${encodeURIComponent(q)}/@${lat.toFixed(5)},${lon.toFixed(5)},14z`;
+
+  // ---------- recarga elétrica (Open Charge Map, grátis) ----------
+  S.chargers = (lat, lon, key) => {
+    const url = `https://api.openchargemap.io/v3/poi/?output=json&latitude=${lat}&longitude=${lon}&distance=40&distanceunit=KM&maxresults=25&compact=true&verbose=false${key ? '&key=' + encodeURIComponent(key) : ''}`;
+    return fetchJSON(url, key ? { headers: { 'X-API-Key': key } } : null, 15000).then(list => (Array.isArray(list) ? list : []).map(p => {
+      const ai = p.AddressInfo || {};
+      const plugs = [...new Set((p.Connections || []).map(c => c.ConnectionType && c.ConnectionType.Title).filter(Boolean))];
+      const dist = ai.Distance != null ? ai.Distance : U.haversine({ lat, lon }, { lat: ai.Latitude, lon: ai.Longitude });
+      return { nm: ai.Title || 'Ponto de recarga', dist, plugs, lat: ai.Latitude, lon: ai.Longitude };
+    }).sort((a, b) => (a.dist || 999) - (b.dist || 999))).catch(() => []);
+  };
 })(window.OFF);

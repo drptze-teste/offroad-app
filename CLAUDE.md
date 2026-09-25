@@ -64,3 +64,10 @@ Raiz `index.html` agora é o APP (a página de teste virou `teste-sensores.html`
 - Tela Veículo: **ficha de Manutenção & fluidos editável offline** (óleo/câmbio/transfer/freio/radiador + códigos de filtro em branco p/ preencher) + **Fóruns & peças** (links de busca Google gerados do nome do modelo). Códigos de peça NÃO são inventados (sem API confiável grátis) — usuário preenche/consulta fórum.
 - Tela Estrada: **Som · Spotify** — Abrir Spotify + playlists salvas offline (localStorage). "Mais tocadas" automático e "tocar no player" = fase 2 (precisa OAuth/Premium, online).
 - Correções da revisão por subagente: SW cacheia item a item (`Promise.allSettled`, o vídeo de 4,77MB não derruba o offline); `loop()` com try/finally (um erro nunca congela o rAF); removido código morto `$('consumo')`; DMS trata carry de 60"; `recStart` usa `!= null`.
+
+## v1.2 (25/set/2026) — voz + elétrico
+- **Assistente por voz** (`js/voice.js` + `voiceAnswer` no app.js): botão 🎙️ flutuante. Fala as respostas (TTS offline); ouvir usa Web Speech (precisa de internet na maioria dos navegadores). Intenções por palavra-chave (offline, dos dados): resumo/status, consumo+autonomia, quanto rodei, luz do dia, onde estou (cidade), voltar ao hotel/carro/início (dist+direção falada), altitude, velocidade, clima, recarga. Balão #voicebubble mostra o texto.
+- **Waypoint Hotel** no Painel (marcar hotel e voltar a ele).
+- **Elétrico:** por veículo, Tipo (combustão/híbrido/elétrico) + Plug (Type2/CCS2/CHAdeMO/GB-T/Tesla) na tela Veículo. Botão "Postos de recarga perto" (Estrada + comando de voz) via **Open Charge Map** — que agora **EXIGE chave** (grátis em openchargemap.org): campo `#ocmKey` salvo offline. Sem chave, cai no **Google Maps** (sem cadastro). Destaca ✅ quando o plug do posto bate com o seu.
+- SW cache v4 (inclui voice.js).
+- **Sobre CarPlay/Android Auto:** decidido ficar no PWA + voz por ora; CarPlay/Android Auto só rodam apps nativos em categorias fechadas (não dá para pôr esse painel lá) — fica como fase futura (app nativo).

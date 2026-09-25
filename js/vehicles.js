@@ -77,4 +77,18 @@ window.OFF = window.OFF || {};
   OFF.saveMeu = obj => U.save('veh_meu', Object.assign({ nome: obj.nome || 'Meu veículo' }, obj));
   OFF.selectedVeh = () => U.load('veh_sel', 'pajero');
   OFF.selectVeh = k => U.save('veh_sel', k);
+
+  // ---------- energia & recarga (elétrico) ----------
+  OFF.plugs = [
+    { id: 'type2', t: 'Type 2', match: 'Type 2' },
+    { id: 'ccs2', t: 'CCS2', match: 'CCS' },
+    { id: 'chademo', t: 'CHAdeMO', match: 'CHAdeMO' },
+    { id: 'gbt', t: 'GB/T', match: 'GB' },
+    { id: 'tesla', t: 'Tesla', match: 'Tesla' },
+  ];
+  OFF.plugMatch = id => { const p = OFF.plugs.find(x => x.id === id); return p ? p.match : ''; };
+  OFF.getEnergy = key => Object.assign({ tipo: 'combustao', plug: '' }, U.load('energy_' + key, {}));
+  OFF.saveEnergy = (key, o) => U.save('energy_' + key, o);
+  OFF.getOcmKey = () => U.load('ocm_key', '') || '';
+  OFF.saveOcmKey = k => U.save('ocm_key', k);
 })(window.OFF);

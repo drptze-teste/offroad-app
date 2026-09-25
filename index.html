@@ -101,6 +101,7 @@
         <div class="big-dist"><span id="wpActiveDist">—</span></div>
         <div class="wpbtns" style="margin-top:10px">
           <button class="act primary" id="wpStart">⚑ Marcar início</button>
+          <button class="act" id="wpHotel">🏨 Hotel</button>
           <button class="act" id="wpCar">🚗 Carro</button>
           <button class="act" id="wpCamp">⛺ Acampamento</button>
         </div>
@@ -133,6 +134,10 @@
       </div>
       <div class="btnrow" id="plList" style="margin-top:8px"></div>
       <div class="coord-sub" style="margin-top:6px">Suas playlists ficam salvas offline; um toque abre no Spotify. Puxar as “mais tocadas” automático precisa de login — fase 2.</div>
+    </div>
+    <div class="tile" style="margin-top:10px"><div class="lbl">Recarga elétrica</div>
+      <div class="btnrow" style="margin-top:0"><button class="act primary" id="btnCharge">⚡ Postos de recarga perto</button>
+        <span class="coord-sub">seu plug: <b id="myPlug">—</b> · configure em Veículo</span></div>
     </div>
   </div></section>
 
@@ -177,6 +182,16 @@
     </div>
     <div class="tile" style="margin-top:10px"><div class="lbl">Fóruns & peças · abre com internet</div>
       <div class="btnrow" id="forums"></div>
+    </div>
+    <div class="tile" style="margin-top:10px"><div class="lbl">Energia & recarga</div>
+      <div class="btnrow" style="margin-top:0">
+        <label class="coord-sub">Tipo: <select class="cinput" id="energyTipo" style="width:auto;display:inline-block"><option value="combustao">Combustão</option><option value="hibrido">Híbrido</option><option value="eletrico">Elétrico</option></select></label>
+        <label class="coord-sub" id="plugWrap" hidden>Plug: <select class="cinput" id="energyPlug" style="width:auto;display:inline-block"></select></label>
+      </div>
+      <div class="btnrow" id="ocmWrap" hidden style="margin-top:8px">
+        <label class="coord-sub">Chave Open Charge Map (grátis): <input class="cinput" id="ocmKey" placeholder="cole aqui — openchargemap.org/site/develop/api" style="max-width:260px;display:inline-block"></label>
+      </div>
+      <div class="coord-sub" style="margin-top:6px">Elétrico/híbrido: escolha o plug. Para listar postos no app, pegue uma chave grátis em openchargemap.org. Sem chave, o botão de recarga abre o Google Maps.</div>
     </div>
   </div></section>
 
@@ -231,6 +246,9 @@
   <div class="sosnote">Você troca quando quiser na tela Veículo. Specs e manutenção ficam salvas offline.</div>
 </div></div>
 
+<button id="micbtn" aria-label="Falar com o assistente">🎙️</button>
+<div id="voicebubble"></div>
+
 <div class="toast" id="toast"></div>
 
 <script src="js/util.js"></script>
@@ -240,6 +258,7 @@
 <script src="js/vehicles.js"></script>
 <script src="js/diagrams.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/voice.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

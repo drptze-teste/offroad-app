@@ -1,9 +1,9 @@
 /* sw.js — offline-first para o app shell; APIs ficam network-only (o app faz cache próprio via localStorage). */
-const CACHE = 'offroad-app-v2';
+const CACHE = 'offroad-app-v4';
 const CORE = [
   './', './index.html', './css/app.css', './manifest.webmanifest', './icon.svg', './assets/intro.mp4',
   './js/util.js', './js/geo.js', './js/services.js', './js/fuel.js',
-  './js/vehicles.js', './js/diagrams.js', './js/ui.js', './js/app.js',
+  './js/vehicles.js', './js/diagrams.js', './js/ui.js', './js/voice.js', './js/app.js',
 ];
 
 // cache item a item: um arquivo que falhe (ex.: o vídeo grande) não impede os outros de cachear

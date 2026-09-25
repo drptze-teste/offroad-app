@@ -40,6 +40,7 @@
   $('btnRec').addEventListener('click', () => { const on = geo.recStart(); $('btnRec').classList.toggle('on', on); $('btnRec').innerHTML = on ? '■ Parar' : '● Gravar'; toast(on ? 'Gravando a rota' : 'Gravação pausada'); });
   $('btnGpx').addEventListener('click', exportGpx);
   $('wpStart').addEventListener('click', () => geo.markWaypoint('Início') ? toast('Início marcado aqui') : toast('Sem GPS ainda'));
+  $('wpHotel').addEventListener('click', () => geo.markWaypoint('Hotel') ? toast('Hotel marcado aqui') : toast('Sem GPS ainda'));
   $('wpCar').addEventListener('click', () => geo.markWaypoint('Carro') ? toast('Carro marcado aqui') : toast('Sem GPS ainda'));
   $('wpCamp').addEventListener('click', () => geo.markWaypoint('Acampamento') ? toast('Acampamento marcado') : toast('Sem GPS ainda'));
 
@@ -110,6 +111,27 @@
   });
   renderPlaylists();
 
+  // ---------- recarga elétrica ----------
+  function openChargers() {
+    if (geo.lat == null) { toast('Sem GPS'); return; }
+    $('sosTitle').textContent = 'Recarga elétrica perto';
+    $('sosList').innerHTML = '<div class="sositem"><div class="info">Buscando pontos de recarga…</div></div>';
+    $('sosMaps').href = S.mapsSearch('posto de recarga carro elétrico', geo.lat, geo.lon);
+    $('sosback').classList.add('show');
+    const myPlug = OFF.plugMatch(OFF.getEnergy(OFF.selectedVeh()).plug);
+    S.chargers(geo.lat, geo.lon, OFF.getOcmKey()).then(items => {
+      if (!items.length) { $('sosList').innerHTML = '<div class="sositem"><div class="info">' + (OFF.getOcmKey() ? 'Nenhum ponto de recarga por aqui.' : 'Para listar postos no app, adicione uma chave grátis do Open Charge Map na tela Veículo.') + ' Use o Google Maps abaixo.</div></div>'; return; }
+      $('sosList').innerHTML = items.map(o => {
+        const mine = myPlug && o.plugs.some(p => p.indexOf(myPlug) >= 0);
+        const plugTxt = o.plugs.length ? o.plugs.join(', ') : 'plugs não informados';
+        return `<div class="sositem"><div class="info"><div class="nm">${esc(o.nm)}${mine ? ' ✅ seu plug' : ''}</div>
+          <div class="mt">${U.fmtKm(o.dist)} km · <span class="ph">${esc(plugTxt)}</span></div></div>
+          <div class="acts">${o.lat != null ? `<a class="routebtn" href="https://www.google.com/maps/search/?api=1&query=${o.lat},${o.lon}" target="_blank" rel="noopener">Rota</a>` : ''}</div></div>`;
+      }).join('');
+    });
+  }
+  $('btnCharge').addEventListener('click', openChargers);
+
   // ---------- escolha do carro na 1ª abertura ----------
   function firstRunCar() {
     if (U.load('seen', false)) return;
@@ -177,11 +199,22 @@
       ['🔎 Códigos de filtro', `https://www.google.com/search?q=${nm}+c%C3%B3digo+filtro+%C3%B3leo+ar+combust%C3%ADvel+cabine`],
       ['🛒 Peças', `https://www.google.com/search?q=pe%C3%A7as+${nm}`],
     ].map(([t, u]) => `<a class="act" href="${u}" target="_blank" rel="noopener">${t}</a>`).join('');
+    // energia & recarga (por veículo)
+    const en = OFF.getEnergy(sel);
+    $('energyTipo').value = en.tipo;
+    $('energyPlug').innerHTML = '<option value="">—</option>' + OFF.plugs.map(p => `<option value="${p.id}">${p.t}</option>`).join('');
+    $('energyPlug').value = en.plug || '';
+    $('ocmKey').value = OFF.getOcmKey();
+    $('ocmKey').onchange = () => { OFF.saveOcmKey($('ocmKey').value.trim()); toast('Chave salva'); };
+    const combust = en.tipo === 'combustao';
+    $('plugWrap').hidden = combust; $('ocmWrap').hidden = combust;
+    const saveEnergy = () => { const o = { tipo: $('energyTipo').value, plug: $('energyPlug').value }; OFF.saveEnergy(sel, o); const c = o.tipo === 'combustao'; $('plugWrap').hidden = c; $('ocmWrap').hidden = c; };
+    $('energyTipo').onchange = saveEnergy; $('energyPlug').onchange = saveEnergy;
   }
 
   // ---------- clima + cidade (internet, com cache) ----------
-  let lastWxTs = 0, lastPlaceTs = 0;
-  function refreshWeather() { if (geo.lat == null || !U.online()) { ui.setWeather(U.load('weather', null)); return; } S.weather(geo.lat, geo.lon).then(w => ui.setWeather(w)); lastWxTs = Date.now(); }
+  let lastWxTs = 0, lastPlaceTs = 0, lastWeather = U.load('weather', null);
+  function refreshWeather() { if (geo.lat == null || !U.online()) { lastWeather = U.load('weather', null); ui.setWeather(lastWeather); return; } S.weather(geo.lat, geo.lon).then(w => { lastWeather = w; ui.setWeather(w); }); lastWxTs = Date.now(); }
   function maybeServices() {
     if (geo.lat == null) return;
     const now = Date.now();
@@ -202,6 +235,8 @@
     $('eOdo').textContent = geo.odoKm.toFixed(0);
     const rl = fuel.rangeLeft(geo.odoKm), rf = fuel.rangeFull();
     $('eRange').textContent = rl != null ? Math.round(rl) : (rf ? Math.round(rf) : '—');
+    const en = OFF.getEnergy(OFF.selectedVeh()), pl = OFF.plugs.find(p => p.id === en.plug);
+    $('myPlug').textContent = en.tipo === 'combustao' ? 'combustão' : (pl ? pl.t : 'defina em Veículo');
   }
 
   const isActive = name => { const s = document.querySelector('.screen[data-screen="' + name + '"]'); return s && s.classList.contains('active'); };
@@ -216,12 +251,64 @@
     finally { requestAnimationFrame(loop); }
   }
 
+  // ---------- assistente de voz ----------
+  const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const cardealFala = c => ({ N: 'norte', NE: 'nordeste', L: 'leste', SE: 'sudeste', S: 'sul', SO: 'sudoeste', O: 'oeste', NO: 'noroeste' }[c] || c);
+  function sunPhrase() {
+    if (geo.lat == null) return 'Ainda sem GPS para calcular o sol.';
+    const t = U.sunTimes(new Date(), geo.lat, geo.lon), now = new Date();
+    if (now > t.sunset) return 'Já anoiteceu. O sol nasce às ' + U.fmtClock(t.sunrise) + '.';
+    if (now < t.sunrise) return 'O sol nasce às ' + U.fmtClock(t.sunrise) + '.';
+    return 'Faltam ' + U.fmtDur(t.sunset - now) + ' de luz. O sol se põe às ' + U.fmtClock(t.sunset) + '.';
+  }
+  function wpPhrase(name) {
+    const wp = geo.waypoints[name];
+    if (!wp) return 'Você ainda não marcou o ' + name.toLowerCase() + '. Marque na tela Painel.';
+    if (geo.lat == null) return 'Sem GPS agora.';
+    const here = { lat: geo.lat, lon: geo.lon }, d = U.haversine(here, wp), b = U.bearing(here, wp);
+    return 'O ' + name.toLowerCase() + ' está a ' + U.fmtKm(d) + ' quilômetros, para ' + cardealFala(U.cardeal(b)) + '.';
+  }
+  function voiceAnswer(text) {
+    const t = norm(text), has = (...w) => w.some(x => t.includes(x)), g = geo;
+    if (has('resumo', 'status', 'como estamos', 'me atualiza')) {
+      const p = [];
+      if (lastPlace && lastPlace.city && lastPlace.city !== '—') p.push('Você está em ' + lastPlace.city + '.');
+      if (g.lat != null) p.push('Velocidade ' + Math.round(g.speed) + ' quilômetros por hora.');
+      if (g.trip.dist > 0) p.push('Rodou ' + g.trip.dist.toFixed(1).replace('.', ',') + ' quilômetros na aventura.');
+      const rl = fuel.rangeLeft(g.odoKm); if (rl != null) p.push('Autonomia cerca de ' + Math.round(rl) + ' quilômetros.');
+      p.push(sunPhrase());
+      return p.join(' ') || 'Ainda estou buscando o GPS.';
+    }
+    if (has('recarga', 'carregar', 'bateria', 'eletric', 'posto de recarga')) { openChargers(); return 'Procurando pontos de recarga perto de você.'; }
+    if (has('combustivel', 'consumo', 'gasolina', 'gastando', 'gasto', 'media de')) {
+      const a = fuel.avgKmL(), rl = fuel.rangeLeft(g.odoKm);
+      if (!a) return 'Ainda não tenho o consumo. Registre dois abastecimentos completos na tela Consumo.';
+      return 'Consumo médio ' + a.toFixed(1).replace('.', ',') + ' quilômetros por litro.' + (rl != null ? ' Restam cerca de ' + Math.round(rl) + ' quilômetros.' : '');
+    }
+    if (has('hotel')) return wpPhrase('Hotel');
+    if (has('acampamento')) return wpPhrase('Acampamento');
+    if (has('carro')) return wpPhrase('Carro');
+    if (has('inicio', 'voltar', 'comeco', 'ponto inicial', 'de volta')) return wpPhrase(g.active || 'Início');
+    if (has('onde estou', 'onde eu estou', 'minha localizacao', 'que lugar', 'cidade')) {
+      if (g.lat == null) return 'Ainda sem GPS.';
+      const c = lastPlace && lastPlace.city && lastPlace.city !== '—' ? ('Você está em ' + lastPlace.city + '. ') : '';
+      return c + 'Coordenada ' + g.lat.toFixed(4) + ', ' + g.lon.toFixed(4) + '.';
+    }
+    if (has('luz', 'sol ', 'escurece', 'anoitece', 'do dia')) return sunPhrase();
+    if (has('altitude', 'altimetro', 'altura')) return g.alt != null ? 'Altitude ' + Math.round(g.alt) + ' metros.' : 'Sem altitude do GPS ainda.';
+    if (has('velocidade', 'quao rapido', 'que velocidade')) return g.lat == null ? 'Sem GPS.' : 'Velocidade ' + Math.round(g.speed) + ' quilômetros por hora.';
+    if (has('clima', 'tempo', 'chuva', 'temperatura', 'graus')) { const w = lastWeather; return w ? (w.desc + ', ' + w.temp + ' graus' + (w.rainProb != null ? ', chance de chuva ' + w.rainProb + ' por cento' : '') + '.') : 'Sem dados de clima agora.'; }
+    if (has('rodei', 'distancia', 'aventura', 'trajeto')) return g.trip.dist > 0 ? 'Você rodou ' + g.trip.dist.toFixed(1).replace('.', ',') + ' quilômetros, em ' + Math.round(g.trip.moveSec / 60) + ' minutos.' : 'A aventura ainda não começou. Toque em Ligar no odômetro.';
+    return 'Posso dizer: consumo, quanto você rodou, luz do dia, onde você está, voltar ao hotel, ao carro ou ao início, clima e recarga.';
+  }
+
   // ---------- boot ----------
   ui.buildStatic();
   if (SIM) { $('simBadge').hidden = false; geo.startSim(); } else geo.startReal();
   requestAnimationFrame(loop);
   runSplash();
   firstRunCar();
+  OFF.voice.init(voiceAnswer);
 
   // relógio nada, mas mantém serviços vivos
   setInterval(maybeServices, 60000);
